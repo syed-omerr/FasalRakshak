@@ -26,6 +26,19 @@ export function OfficerAggregateView() {
   const [data, setData] = useState<AggregateRiskData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  const getFallbackRiskData = (): AggregateRiskData => ({
+    village_name: "Warangal West Block",
+    district: "Warangal",
+    state: "Telangana",
+    total_monitored_plots: 42,
+    advisory_status_count: 5,
+    claim_status_count: 2,
+    normal_status_count: 35,
+    total_claims_filed: 1,
+    district_risk_percentage: 23.8
+  });
 
   const fetchRiskData = async () => {
     try {
@@ -35,8 +48,10 @@ export function OfficerAggregateView() {
       if (!res.ok) throw new Error("Failed to fetch aggregate risk report");
       const json = await res.json();
       setData(json);
+      setIsDemoMode(false);
     } catch (err: any) {
-      setError(err.message || "Failed to load risk statistics");
+      setData(getFallbackRiskData());
+      setIsDemoMode(true);
     } finally {
       setLoading(false);
     }
@@ -44,18 +59,9 @@ export function OfficerAggregateView() {
 
   useEffect(() => {
     fetchRiskData();
-    // Poll aggregates every 10 seconds to stay aligned with simulation updates
     const interval = setInterval(fetchRiskData, 10000);
     return () => clearInterval(interval);
   }, []);
-
-  if (error) {
-    return (
-      <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-6 text-center text-xs text-rose-400">
-        Aggregate Risk Data Offline: {error}
-      </div>
-    );
-  }
 
   if (!data) {
     return (
@@ -76,7 +82,14 @@ export function OfficerAggregateView() {
         <div className="flex items-center gap-2">
           <Building className="size-5 text-primary" />
           <div>
-            <h3 className="text-lg font-bold text-foreground">Officer Supervisor Dashboard</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-bold text-foreground">Officer Supervisor Dashboard</h3>
+              {isDemoMode && (
+                <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-amber-400">
+                  Demo Mode
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">Regional summary reports and risk aggregates</p>
           </div>
         </div>
@@ -84,7 +97,7 @@ export function OfficerAggregateView() {
         <button
           onClick={fetchRiskData}
           disabled={loading}
-          className="rounded-full p-2 border border-border bg-card/85 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 text-xs hover:border-primary/50"
+          className="rounded-full px-3 py-1.5 border border-border bg-card/85 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 text-xs hover:border-primary/50"
           title="Refresh aggregates"
         >
           <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
@@ -127,7 +140,7 @@ export function OfficerAggregateView() {
             <FileText className="size-3 text-rose-500" /> PMFBY Claim Alerts
           </span>
           <div className="text-3xl font-black text-rose-500">{data.claim_status_count}</div>
-          <div className="text-[0.62rem] text-muted-foreground">Filed claims: <span className="font-bold text-foreground">{data.total_claims_filed}</span></div>
+          <div className="text-[0.62rem] text-muted-foreground">Claims filed: <span className="font-bold text-foreground">{data.total_claims_filed}</span></div>
         </div>
       </div>
 

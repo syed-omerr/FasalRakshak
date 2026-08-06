@@ -101,11 +101,10 @@ function Reveal({
 }
 
 const chapters = [
-  { id: "overview", label: "Overview" },
-  { id: "map", label: "Satellite Map" },
-  { id: "pmfby", label: "PMFBY 72h Claims" },
-  { id: "telemetry", label: "NDVI Telemetry" },
+  { id: "satellite", label: "Satellite Map" },
+  { id: "pmfby", label: "PMFBY Claims Hub" },
   { id: "mandi", label: "Market Intelligence" },
+  { id: "onboarding", label: "System Guide" },
 ];
 
 const stats = [
@@ -154,6 +153,7 @@ function Index() {
   const [showNdviOverlay, setShowNdviOverlay] = useState<boolean>(true);
   const [weatherList, setWeatherList] = useState<WeatherData[]>([]);
   const [language, setLanguage] = useState<"EN" | "HI" | "TE">("EN");
+  const [activeTab, setActiveTab] = useState<"satellite" | "pmfby" | "mandi" | "onboarding">("satellite");
 
   useEffect(() => {
     async function loadWeather() {
@@ -200,40 +200,53 @@ function Index() {
   };
 
   return (
-    <main className="overflow-x-hidden bg-background text-foreground">
-      <Nav language={language} setLanguage={setLanguage} />
-      <Hero y={y} />
-      <Marquee />
-      
-      {/* Overview Section */}
-      <OverviewSection y={y} />
-      
-      {/* Key Metrics Band */}
-      <StatsBand />
-
-      {/* Interactive Map & Telemetry Dashboard Section */}
-      <DashboardSection
-        plots={plotList}
-        selectedPlot={selectedPlot}
-        setSelectedPlot={setSelectedPlot}
-        showNdviOverlay={showNdviOverlay}
-        setShowNdviOverlay={setShowNdviOverlay}
-        weatherList={weatherList}
-        onAddNewPlot={handleAddNewPlot}
-        onRemovePlot={handleRemovePlot}
+    <main className="overflow-x-hidden bg-background text-foreground min-h-screen flex flex-col">
+      <Nav 
+        language={language} 
+        setLanguage={setLanguage} 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
       />
+      
+      <div className="flex-1 pt-12">
+        {activeTab === "onboarding" && (
+          <div className="animate-fade-in">
+            <Hero y={y} />
+            <Marquee />
+            <OverviewSection y={y} />
+            <StatsBand />
+            <TraitsSection />
+          </div>
+        )}
 
-      {/* SRS v2.0 PMFBY 72h Claim & Vernacular Alert Section */}
-      <PmfbySection selectedPlot={selectedPlot} />
+        {activeTab === "satellite" && (
+          <div className="animate-fade-in">
+            <DashboardSection
+              plots={plotList}
+              selectedPlot={selectedPlot}
+              setSelectedPlot={setSelectedPlot}
+              showNdviOverlay={showNdviOverlay}
+              setShowNdviOverlay={setShowNdviOverlay}
+              weatherList={weatherList}
+              onAddNewPlot={handleAddNewPlot}
+              onRemovePlot={handleRemovePlot}
+            />
+          </div>
+        )}
 
-      {/* AI System Traits / Architecture Section */}
-      <TraitsSection />
+        {activeTab === "pmfby" && (
+          <div className="animate-fade-in">
+            <PmfbySection selectedPlot={selectedPlot} />
+          </div>
+        )}
 
-      {/* Yield & Disease Early Warning Section */}
-      <YieldSection y={y} selectedPlot={selectedPlot} />
-
-      {/* Mandi Price & ROI Section */}
-      <MandiSection />
+        {activeTab === "mandi" && (
+          <div className="animate-fade-in">
+            <YieldSection y={y} selectedPlot={selectedPlot} />
+            <MandiSection />
+          </div>
+        )}
+      </div>
 
       <Footer />
     </main>
@@ -243,26 +256,40 @@ function Index() {
 function Nav({
   language,
   setLanguage,
+  activeTab,
+  setActiveTab,
 }: {
   language: "EN" | "HI" | "TE";
   setLanguage: (lang: "EN" | "HI" | "TE") => void;
+  activeTab: "satellite" | "pmfby" | "mandi" | "onboarding";
+  setActiveTab: (tab: "satellite" | "pmfby" | "mandi" | "onboarding") => void;
 }) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-soil/80 backdrop-blur-md border-b border-border/60">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4 md:px-10">
-        <a href="#top" className="font-sans font-extrabold text-2xl tracking-tight text-foreground flex items-center gap-1">
+        <button 
+          onClick={() => setActiveTab("satellite")} 
+          className="font-sans font-extrabold text-2xl tracking-tight text-foreground flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
+        >
           FasalRakshak<span className="text-primary">.</span>
-        </a>
-        <nav className="hidden items-center gap-8 lg:flex">
-          {chapters.map((c) => (
-            <a
-              key={c.id}
-              href={`#${c.id}`}
-              className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground transition-colors hover:text-primary"
-            >
-              {c.label}
-            </a>
-          ))}
+        </button>
+        <nav className="hidden items-center gap-6 lg:flex">
+          {chapters.map((c) => {
+            const active = activeTab === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setActiveTab(c.id as any)}
+                className={`text-[0.7rem] font-semibold uppercase tracking-[0.24em] transition-all cursor-pointer px-3 py-1.5 rounded-full ${
+                  active
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {c.label}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -272,7 +299,7 @@ function Nav({
               <button
                 key={lang}
                 onClick={() => setLanguage(lang)}
-                className={`rounded-full px-2.5 py-0.5 font-semibold transition-colors ${
+                className={`rounded-full px-2.5 py-0.5 font-semibold transition-colors cursor-pointer ${
                   language === lang
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -283,12 +310,12 @@ function Nav({
             ))}
           </div>
 
-          <a
-            href="#map"
-            className="rounded-full border border-primary/60 px-5 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+          <button
+            onClick={() => setActiveTab("satellite")}
+            className="rounded-full border border-primary/60 px-5 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-primary hover:text-primary-foreground cursor-pointer"
           >
             Launch Map
-          </a>
+          </button>
         </div>
       </div>
     </header>
