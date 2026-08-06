@@ -241,7 +241,7 @@ function Nav({
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-soil/80 backdrop-blur-md border-b border-border/60">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4 md:px-10">
-        <a href="#top" className="display text-2xl tracking-widest text-foreground flex items-center gap-1">
+        <a href="#top" className="font-sans font-extrabold text-2xl tracking-tight text-foreground flex items-center gap-1">
           FasalRakshak<span className="text-primary">.</span>
         </a>
         <nav className="hidden items-center gap-8 lg:flex">
@@ -703,7 +703,7 @@ function Footer() {
   return (
     <footer className="border-t border-border bg-soil py-12">
       <div className="mx-auto flex max-w-[1600px] flex-col gap-6 px-6 md:flex-row md:items-center md:justify-between md:px-10">
-        <p className="display text-2xl tracking-widest text-foreground">
+        <p className="font-sans font-extrabold text-2xl tracking-tight text-foreground">
           FasalRakshak<span className="text-primary">.</span>
         </p>
         <p className="max-w-md text-xs leading-relaxed text-muted-foreground">
