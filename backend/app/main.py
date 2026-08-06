@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.weather_routes import router as weather_router
+from app.api.ndvi_routes import router as ndvi_router
 
 app = FastAPI(
     title="FasalRakshak 2.0 API",
@@ -19,6 +20,7 @@ app.add_middleware(
 
 # Register Routers
 app.include_router(weather_router)
+app.include_router(ndvi_router)
 
 @app.get("/api/health")
 def health_check():
@@ -26,7 +28,7 @@ def health_check():
         "status": "online",
         "system": "FasalRakshak 2.0 Backend Core",
         "version": "2.0.0",
-        "active_modules": ["weather", "geospatial", "disease_rules"]
+        "active_modules": ["weather", "geospatial", "disease_rules", "ndvi_engine"]
     }
 
 if __name__ == "__main__":
