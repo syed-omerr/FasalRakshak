@@ -3,8 +3,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FarmPlot, INITIAL_PLOTS } from "@/lib/plots";
 import { NdviAnalytics } from "@/components/NdviAnalytics";
 import { PmfbyClaimCard } from "@/components/PmfbyClaimCard";
-import { RealTimeAlertsFeed } from "@/components/RealTimeAlertsFeed";
+import { RealTimeAlertsFeed, AlertLogItem } from "@/components/RealTimeAlertsFeed";
 import { OfficerAggregateView } from "@/components/OfficerAggregateView";
+import { KisanFarmerView } from "@/components/KisanFarmerView";
 
 
 
@@ -149,6 +150,7 @@ interface WeatherData {
 
 function Index() {
   const y = useScrollY();
+  const [productView, setProductView] = useState<"kisan" | "enterprise">("enterprise");
   const [plotList, setPlotList] = useState<FarmPlot[]>(INITIAL_PLOTS);
   const [selectedPlot, setSelectedPlot] = useState<FarmPlot>(INITIAL_PLOTS[0]);
   const [showNdviOverlay, setShowNdviOverlay] = useState<boolean>(true);
@@ -156,6 +158,51 @@ function Index() {
   const [language, setLanguage] = useState<"EN" | "HI" | "TE">("EN");
   const [activeTab, setActiveTab] = useState<"satellite" | "pmfby" | "mandi" | "onboarding">("onboarding");
   const [InteractiveMap, setInteractiveMap] = useState<any>(null);
+
+  // Shared alerts feed log state
+  const [dispatchedAlerts, setDispatchedAlerts] = useState<AlertLogItem[]>([
+    {
+      id: "alert-901",
+      plot_id: "plot-103",
+      farmer_name: "Suresh Kumar",
+      crop_type: "Maize",
+      tier: "PREVENTIVE_ADVISORY",
+      confidence_score_pct: 82.0,
+      created_at: "Today, 18:30:15",
+      explainability_note: "Warning: Dry spells detected for 12 consecutive days and NDVI vegetation density dropped by 14%. Immediate irrigation recommended.",
+      status: "ADVISORY_SENT"
+    },
+    {
+      id: "alert-902",
+      plot_id: "plot-102",
+      farmer_name: "Kavitha Rao",
+      crop_type: "Groundnut",
+      tier: "PMFBY_CLAIM_ALERT",
+      confidence_score_pct: 94.5,
+      created_at: "Today, 19:15:30",
+      explainability_note: "Critical damage detected: Satellite greenness dropped by 22% and local weather stations report a 45% cumulative monsoon deficit.",
+      status: "AWAITING_CONSENT",
+      evidence_pdf_url: "/static/pdf/evidence_plot-102.pdf"
+    }
+  ]);
+
+  // Shared claims registry log state
+  const [filedClaims, setFiledClaims] = useState<any[]>([
+    {
+      farmer_id: "FARMER-KAVITHA-RAO",
+      plot_id: "plot-102",
+      farmer_name: "Kavitha Rao",
+      crop_type: "Groundnut",
+      damage_score: 0.22,
+      confidence_pct: 94.5,
+      evidence_pdf_url: "/static/pdf/evidence_plot-102.pdf",
+      consent_channel: "WhatsApp Quick Reply Button",
+      consent_timestamp: "Today, 19:16:02",
+      acknowledgment_id: "PMFBY-TEL-2026-78401",
+      submitted_at: "Today, 19:16:02",
+      status: "APPROVED_BY_INSURER"
+    }
+  ]);
 
   useEffect(() => {
     // Dynamically load the Leaflet Map component ONLY on the client to avoid SSR window errors
@@ -196,6 +243,26 @@ function Index() {
   const handleAddNewPlot = (newPlot: FarmPlot) => {
     setPlotList((prev) => [newPlot, ...prev]);
     setSelectedPlot(newPlot);
+
+    // If new plot triggers claim or advisory, add to alerts queue automatically
+    const threatStatus = newPlot.health_status;
+    if (threatStatus !== "HEALTHY") {
+      const alertId = `alert-custom-${Date.now()}`;
+      const newAlert: AlertLogItem = {
+        id: alertId,
+        plot_id: newPlot.id,
+        farmer_name: newPlot.farmer,
+        crop_type: newPlot.crop_type,
+        tier: threatStatus === "CRITICAL" ? "PMFBY_CLAIM_ALERT" : "PREVENTIVE_ADVISORY",
+        confidence_score_pct: 92.0,
+        created_at: "Just Now",
+        explainability_note: threatStatus === "CRITICAL" 
+          ? `Crop damage confirmed on ${newPlot.farmer}'s field: Satellite NDVI greenness dropped below threshold. Evidence ready.`
+          : `Dry spell detected on ${newPlot.farmer}'s field. Preventative advisories dispatched to mitigate loss.`,
+        status: threatStatus === "CRITICAL" ? "AWAITING_CONSENT" : "ADVISORY_SENT"
+      };
+      setDispatchedAlerts((prev) => [newAlert, ...prev]);
+    }
   };
 
   const handleRemovePlot = (plotId: string) => {
@@ -208,6 +275,53 @@ function Index() {
     }
   };
 
+  const handleUpdateAlert = (alertId: string, updatedFields: Partial<AlertLogItem>) => {
+    setDispatchedAlerts((prev) =>
+      prev.map((a) => (a.id === alertId ? { ...a, ...updatedFields } : a))
+    );
+  };
+
+  const handleOverrideClaim = (ackId: string, action: string) => {
+    setFiledClaims((prev) =>
+      prev.map((c) => (c.acknowledgment_id === ackId ? { ...c, status: action } : c))
+    );
+    // Sync status change in alerts feed as well
+    setDispatchedAlerts((prev) =>
+      prev.map((a) =>
+        a.acknowledgment_id === ackId
+          ? { ...a, status: "CLAIM_SUBMITTED" }
+          : a
+      )
+    );
+    // Keep backend synced
+    fetch("http://localhost:8000/api/pmfby/override-claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ acknowledgment_id: ackId, action })
+    }).catch(() => {});
+  };
+
+  const handleAddClaim = (claim: any) => {
+    setFiledClaims((prev) => {
+      if (prev.some((c) => c.plot_id === claim.plot_id)) {
+        return prev.map((c) => c.plot_id === claim.plot_id ? { ...c, ...claim } : c);
+      }
+      return [claim, ...prev];
+    });
+    // Sync alerts list status
+    setDispatchedAlerts((prev) =>
+      prev.map((a) =>
+        a.plot_id === claim.plot_id && a.tier === "PMFBY_CLAIM_ALERT"
+          ? {
+              ...a,
+              status: "CLAIM_SUBMITTED" as const,
+              acknowledgment_id: claim.acknowledgment_id
+            }
+          : a
+      )
+    );
+  };
+
   return (
     <main className="overflow-x-hidden bg-background text-foreground min-h-screen flex flex-col">
       <Nav 
@@ -215,45 +329,70 @@ function Index() {
         setLanguage={setLanguage} 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
+        productView={productView}
+        setProductView={setProductView}
       />
       
       <div className="flex-1 pt-12">
-        {activeTab === "onboarding" && (
+        {productView === "kisan" ? (
           <div className="animate-fade-in">
-            <Hero y={y} />
-            <Marquee />
-            <OverviewSection y={y} />
-            <StatsBand />
-            <TraitsSection />
-          </div>
-        )}
-
-        {activeTab === "satellite" && (
-          <div className="animate-fade-in">
-            <DashboardSection
+            <KisanFarmerView
               plots={plotList}
-              selectedPlot={selectedPlot}
-              setSelectedPlot={setSelectedPlot}
-              showNdviOverlay={showNdviOverlay}
-              setShowNdviOverlay={setShowNdviOverlay}
-              weatherList={weatherList}
               onAddNewPlot={handleAddNewPlot}
-              onRemovePlot={handleRemovePlot}
-              InteractiveMap={InteractiveMap}
+              onSelectPlot={setSelectedPlot}
+              selectedPlot={selectedPlot}
+              onAddClaim={handleAddClaim}
+              filedClaims={filedClaims}
             />
           </div>
-        )}
-
-        {activeTab === "pmfby" && (
+        ) : (
           <div className="animate-fade-in">
-            <PmfbySection selectedPlot={selectedPlot} />
-          </div>
-        )}
+            {activeTab === "onboarding" && (
+              <div className="animate-fade-in">
+                <Hero y={y} />
+                <Marquee />
+                <OverviewSection y={y} />
+                <StatsBand />
+                <TraitsSection />
+              </div>
+            )}
 
-        {activeTab === "mandi" && (
-          <div className="animate-fade-in">
-            <YieldSection y={y} selectedPlot={selectedPlot} />
-            <MandiSection />
+            {activeTab === "satellite" && (
+              <div className="animate-fade-in">
+                <DashboardSection
+                  plots={plotList}
+                  selectedPlot={selectedPlot}
+                  setSelectedPlot={setSelectedPlot}
+                  showNdviOverlay={showNdviOverlay}
+                  setShowNdviOverlay={setShowNdviOverlay}
+                  weatherList={weatherList}
+                  onAddNewPlot={handleAddNewPlot}
+                  onRemovePlot={handleRemovePlot}
+                  InteractiveMap={InteractiveMap}
+                />
+              </div>
+            )}
+
+            {activeTab === "pmfby" && (
+              <div className="animate-fade-in">
+                <PmfbySection 
+                  selectedPlot={selectedPlot} 
+                  onAddNewPlot={handleAddNewPlot}
+                  plotCount={plotList.length}
+                  dispatchedAlerts={dispatchedAlerts}
+                  handleUpdateAlert={handleUpdateAlert}
+                  filedClaims={filedClaims}
+                  handleOverrideClaim={handleOverrideClaim}
+                />
+              </div>
+            )}
+
+            {activeTab === "mandi" && (
+              <div className="animate-fade-in">
+                <YieldSection y={y} selectedPlot={selectedPlot} />
+                <MandiSection />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -268,41 +407,75 @@ function Nav({
   setLanguage,
   activeTab,
   setActiveTab,
+  productView,
+  setProductView
 }: {
   language: "EN" | "HI" | "TE";
   setLanguage: (lang: "EN" | "HI" | "TE") => void;
   activeTab: "satellite" | "pmfby" | "mandi" | "onboarding";
   setActiveTab: (tab: "satellite" | "pmfby" | "mandi" | "onboarding") => void;
+  productView: "kisan" | "enterprise";
+  setProductView: (view: "kisan" | "enterprise") => void;
 }) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-soil/80 backdrop-blur-md border-b border-border/60">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4 md:px-10">
         <button 
-          onClick={() => setActiveTab("satellite")} 
+          onClick={() => setActiveTab("onboarding")} 
           className="font-sans font-extrabold text-2xl tracking-tight text-foreground flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
         >
           FasalRakshak<span className="text-primary">.</span>
         </button>
-        <nav className="hidden items-center gap-6 lg:flex">
-          {chapters.map((c) => {
-            const active = activeTab === c.id;
-            return (
-              <button
-                key={c.id}
-                onClick={() => setActiveTab(c.id as any)}
-                className={`text-[0.7rem] font-semibold uppercase tracking-[0.24em] transition-all cursor-pointer px-3 py-1.5 rounded-full ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {c.label}
-              </button>
-            );
-          })}
-        </nav>
+
+        {productView === "enterprise" && (
+          <nav className="hidden items-center gap-6 lg:flex">
+            {chapters.map((c) => {
+              const active = activeTab === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setActiveTab(c.id as any)}
+                  className={`text-[0.7rem] font-semibold uppercase tracking-[0.24em] transition-all cursor-pointer px-3 py-1.5 rounded-full ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+          </nav>
+        )}
 
         <div className="flex items-center gap-4">
+          {/* FasalRakshak v3.0 Product View Switcher Toggle */}
+          <div className="flex items-center gap-1 bg-card border border-border rounded-full p-1 text-[11px]">
+            <button
+              onClick={() => {
+                setProductView("enterprise");
+                setActiveTab("onboarding");
+              }}
+              className={`rounded-full px-3 py-1 font-bold transition-all cursor-pointer ${
+                productView === "enterprise"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              💼 Enterprise
+            </button>
+            <button
+              onClick={() => setProductView("kisan")}
+              className={`rounded-full px-3 py-1 font-bold transition-all cursor-pointer ${
+                productView === "kisan"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              🌾 Kisan
+            </button>
+          </div>
+
           <div className="flex items-center gap-1 rounded-full border border-border bg-card p-1 text-xs">
             <Globe className="size-3 text-muted-foreground ml-1.5" />
             {(["EN", "HI", "TE"] as const).map((lang) => (
@@ -320,12 +493,14 @@ function Nav({
             ))}
           </div>
 
-          <button
-            onClick={() => setActiveTab("satellite")}
-            className="rounded-full border border-primary/60 px-5 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-primary hover:text-primary-foreground cursor-pointer"
-          >
-            Launch Map
-          </button>
+          {productView === "enterprise" && (
+            <button
+              onClick={() => setActiveTab("satellite")}
+              className="rounded-full border border-primary/60 px-5 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-primary hover:text-primary-foreground cursor-pointer"
+            >
+              Launch Map
+            </button>
+          )}
         </div>
       </div>
     </header>
@@ -621,7 +796,23 @@ function DashboardSection({
   );
 }
 
-function PmfbySection({ selectedPlot }: { selectedPlot: FarmPlot }) {
+function PmfbySection({ 
+  selectedPlot, 
+  onAddNewPlot,
+  plotCount,
+  dispatchedAlerts,
+  handleUpdateAlert,
+  filedClaims,
+  handleOverrideClaim
+}: { 
+  selectedPlot: FarmPlot; 
+  onAddNewPlot: (plot: FarmPlot) => void;
+  plotCount: number;
+  dispatchedAlerts: AlertLogItem[];
+  handleUpdateAlert: (id: string, updatedFields: Partial<AlertLogItem>) => void;
+  filedClaims: any[];
+  handleOverrideClaim: (ackId: string, action: string) => void;
+}) {
   return (
     <section id="pmfby" className="py-28 md:py-36 border-b border-border bg-soil/60">
       <div className="mx-auto max-w-[1600px] px-6 md:px-10 space-y-10">
@@ -643,8 +834,13 @@ function PmfbySection({ selectedPlot }: { selectedPlot: FarmPlot }) {
               <PmfbyClaimCard plot={selectedPlot} />
             </div>
             <div className="xl:col-span-6 space-y-8">
-              <OfficerAggregateView />
-              <RealTimeAlertsFeed />
+              <OfficerAggregateView onAddNewPlot={onAddNewPlot} plotCount={plotCount} />
+              <RealTimeAlertsFeed 
+                sharedAlerts={dispatchedAlerts} 
+                onUpdateAlert={handleUpdateAlert}
+                filedClaims={filedClaims}
+                onOverrideClaim={handleOverrideClaim}
+              />
             </div>
           </div>
         </Reveal>

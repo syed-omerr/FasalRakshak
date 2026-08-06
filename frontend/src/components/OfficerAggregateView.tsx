@@ -7,8 +7,11 @@ import {
   AlertTriangle, 
   FileText, 
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Upload,
+  Database
 } from "lucide-react";
+import { FarmPlot } from "../lib/plots";
 
 export interface AggregateRiskData {
   village_name: string;
@@ -22,20 +25,29 @@ export interface AggregateRiskData {
   district_risk_percentage: number;
 }
 
-export function OfficerAggregateView() {
+interface OfficerAggregateViewProps {
+  onAddNewPlot: (newPlot: FarmPlot) => void;
+  plotCount: number;
+}
+
+export function OfficerAggregateView({ onAddNewPlot, plotCount }: OfficerAggregateViewProps) {
   const [data, setData] = useState<AggregateRiskData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
+  // Bulk CSV import states
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+
   const getFallbackRiskData = (): AggregateRiskData => ({
     village_name: "Warangal West Block",
     district: "Warangal",
     state: "Telangana",
-    total_monitored_plots: 42,
+    total_monitored_plots: plotCount,
     advisory_status_count: 5,
     claim_status_count: 2,
-    normal_status_count: 35,
+    normal_status_count: Math.max(0, plotCount - 7),
     total_claims_filed: 1,
     district_risk_percentage: 23.8
   });
@@ -47,6 +59,9 @@ export function OfficerAggregateView() {
       const res = await fetch("http://localhost:8000/api/pmfby/aggregate-risk");
       if (!res.ok) throw new Error("Failed to fetch aggregate risk report");
       const json = await res.json();
+      // Keep total plots synced with active frontend plots count
+      json.total_monitored_plots = plotCount;
+      json.normal_status_count = Math.max(0, plotCount - json.advisory_status_count - json.claim_status_count);
       setData(json);
       setIsDemoMode(false);
     } catch (err: any) {
@@ -59,9 +74,96 @@ export function OfficerAggregateView() {
 
   useEffect(() => {
     fetchRiskData();
+  }, [plotCount]);
+
+  useEffect(() => {
     const interval = setInterval(fetchRiskData, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [plotCount]);
+
+  const handleImportSampleCSV = () => {
+    setImporting(true);
+    setImportStatus("Reading plot_records_telangana.csv...");
+    
+    setTimeout(() => {
+      const mockPlots: FarmPlot[] = [
+        {
+          id: "plot-csv-101",
+          name: "Venkataiah's Chilli Field",
+          crop_type: "Chilli",
+          farmer: "M. Venkataiah",
+          location: "Parkal, Warangal",
+          acreage: 3.4,
+          ndvi_mean: 0.74,
+          health_status: "HEALTHY",
+          center: [18.0125, 79.6214],
+          polygon: [
+            [18.0135, 79.6204],
+            [18.0139, 79.6224],
+            [18.0115, 79.6228],
+            [18.0111, 79.6208],
+          ]
+        },
+        {
+          id: "plot-csv-102",
+          name: "Sammaiah's Tomato Field",
+          crop_type: "Tomato",
+          farmer: "G. Sammaiah",
+          location: "Dharmasagar, Warangal",
+          acreage: 1.8,
+          ndvi_mean: 0.48,
+          health_status: "MODERATE",
+          center: [17.9945, 79.5124],
+          polygon: [
+            [17.9955, 79.5114],
+            [17.9959, 79.5134],
+            [17.9935, 79.5138],
+            [17.9931, 79.5118],
+          ]
+        },
+        {
+          id: "plot-csv-103",
+          name: "Laxmi's Rice Field",
+          crop_type: "Rice/Paddy",
+          farmer: "K. Laxmi",
+          location: "Geesugonda, Warangal",
+          acreage: 4.1,
+          ndvi_mean: 0.32,
+          health_status: "CRITICAL",
+          center: [17.9625, 79.6824],
+          polygon: [
+            [17.9635, 79.6814],
+            [17.9639, 79.6834],
+            [17.9615, 79.6838],
+            [17.9611, 79.6818],
+          ]
+        }
+      ];
+
+      // Call API mock parser first
+      fetch("http://localhost:8000/api/plots/bulk-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plots: mockPlots })
+      })
+        .then(() => {
+          mockPlots.forEach((plot) => {
+            onAddNewPlot(plot);
+          });
+          setImportStatus("Onboard success! Parsed & registered Chilli, Tomato, and Rice fields.");
+        })
+        .catch(() => {
+          // Fallback if API offline
+          mockPlots.forEach((plot) => {
+            onAddNewPlot(plot);
+          });
+          setImportStatus("Import Successful (Local Fallback)! Onboarded 3 fields.");
+        })
+        .finally(() => {
+          setImporting(false);
+        });
+    }, 1500);
+  };
 
   if (!data) {
     return (
@@ -97,7 +199,7 @@ export function OfficerAggregateView() {
         <button
           onClick={fetchRiskData}
           disabled={loading}
-          className="rounded-full px-3 py-1.5 border border-border bg-card/85 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 text-xs hover:border-primary/50"
+          className="rounded-full px-3 py-1.5 border border-border bg-card/85 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 text-xs hover:border-primary/50 cursor-pointer"
           title="Refresh aggregates"
         >
           <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
@@ -141,6 +243,32 @@ export function OfficerAggregateView() {
           </span>
           <div className="text-3xl font-black text-rose-500">{data.claim_status_count}</div>
           <div className="text-[0.62rem] text-muted-foreground">Claims filed: <span className="font-bold text-foreground">{data.total_claims_filed}</span></div>
+        </div>
+      </div>
+
+      {/* Bulk CSV Importer Widget */}
+      <div className="rounded-lg bg-soil/50 border border-border p-4 space-y-3.5">
+        <div>
+          <h4 className="text-xs uppercase font-extrabold tracking-widest text-muted-foreground flex items-center gap-1.5">
+            <Upload className="size-3.5 text-primary" /> Bulk Plot Onboarding (CSV)
+          </h4>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            Upload custom CSV records to bulk register plot boundaries and farmer directories onto the GIS map.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          <div className="flex-1 border border-dashed border-border rounded-lg bg-card/60 p-3 flex items-center justify-center text-[10px] text-muted-foreground text-center">
+            {importStatus || "Drop plot_boundary_records.csv here to parse..."}
+          </div>
+          <button
+            onClick={handleImportSampleCSV}
+            disabled={importing}
+            className="px-3.5 py-2.5 rounded-lg bg-primary hover:bg-primary/95 text-primary-foreground font-bold transition-all text-xs cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            {importing && <RefreshCw className="size-3 animate-spin" />}
+            <span>Simulate CSV Import</span>
+          </button>
         </div>
       </div>
 

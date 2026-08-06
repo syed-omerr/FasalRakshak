@@ -284,3 +284,196 @@ def get_aggregate_risk():
         "total_claims_filed": len(FILED_CLAIMS_DB),
         "district_risk_percentage": round(((advisory_count + claim_count * 2) / (total_monitored_plots * 2)) * 100, 1)
     }
+
+# --- Step 5: FasalRakshak v3.0 Dual-Product Endpoints ---
+
+from pydantic import BaseModel
+
+class BulkImportRequest(BaseModel):
+    plots: List[Dict[str, Any]]
+
+class GuidedRegisterRequest(BaseModel):
+    farmer_name: str
+    phone: str
+    village: str
+    crop_type: str
+    latitude: float
+    longitude: float
+
+class VoiceQueryRequest(BaseModel):
+    query: str
+    plot_id: str
+    language: str
+
+class ClaimOverrideRequest(BaseModel):
+    acknowledgment_id: str
+    action: str  # APPROVED_BY_INSURER, REJECTED_BY_INSURER, DLMC_REVIEW
+
+@router.post("/api/plots/bulk-import")
+def bulk_import_plots(request: BulkImportRequest):
+    """
+    SRS v3.0 FR-9.6: Bulk plot import for Enterprise dashboards.
+    Parses imported JSON/CSV records and returns them for frontend registration.
+    """
+    return {
+        "status": "SUCCESS",
+        "imported_count": len(request.plots),
+        "message": f"Successfully validated and parsed {len(request.plots)} plot records.",
+        "plots": request.plots
+    }
+
+@router.post("/api/plots/register")
+def guided_register_plot(request: GuidedRegisterRequest):
+    """
+    SRS v3.0 FR-9.6: Guided farmer onboarding registration.
+    Generates a custom plot boundary centered on coordinates.
+    """
+    lat, lon = request.latitude, request.longitude
+    plot_id = f"plot-custom-{uuid.uuid4().hex[:6]}"
+    
+    new_plot = {
+        "id": plot_id,
+        "name": f"{request.farmer_name}'s {request.crop_type} Field",
+        "crop_type": request.crop_type,
+        "farmer": request.farmer_name,
+        "location": f"{request.village}, Telangana",
+        "acreage": 2.5,
+        "ndvi_mean": 0.70,
+        "health_status": "HEALTHY",
+        "center": [lat, lon],
+        "polygon": [
+            [lat + 0.0012, lon - 0.0015],
+            [lat + 0.0018, lon + 0.0015],
+            [lat - 0.0012, lon + 0.0018],
+            [lat - 0.0018, lon - 0.0012],
+        ]
+    }
+    
+    return {
+        "status": "SUCCESS",
+        "message": f"Plot registered successfully under ID {plot_id}.",
+        "plot": new_plot
+    }
+
+@router.post("/api/pmfby/override-claim")
+def override_claim(request: ClaimOverrideRequest):
+    """
+    SRS v3.0 FR-9.4: Insurer / Officer manual overrides for filed claims.
+    Updates the status in the central database list.
+    """
+    for claim in FILED_CLAIMS_DB:
+        if claim.get("acknowledgment_id") == request.acknowledgment_id:
+            claim["status"] = request.action
+            return {
+                "status": "SUCCESS", 
+                "message": f"Claim {request.acknowledgment_id} manually override to {request.action}."
+            }
+            
+    # Also search PENDING / DISPATCHED ALERTS to override if filed
+    for alert in DISPATCHED_ALERTS_FEED:
+        if alert.get("acknowledgment_id") == request.acknowledgment_id:
+            alert["status"] = "CLAIM_SUBMITTED"
+            
+    raise HTTPException(status_code=404, detail="Claim record not found in Filed database.")
+
+@router.post("/api/kisan/voice-query")
+def kisan_voice_query(request: VoiceQueryRequest):
+    """
+    SRS v3.0 FR-9.2: Farmer Voice Assistant engine.
+    Translates technical telemetry metrics into naturalspoken Telugu / English.
+    """
+    q = request.query.lower()
+    lang = request.language.upper() # EN or TE
+    
+    # Simple semantic keyword routing
+    is_health = any(w in q for w in ["health", "field", "polam", "ఆరోగ్యం", "పొలం", "పరిస్థితి"])
+    is_claim = any(w in q for w in ["claim", "file", "submit", "సమర్పించు", "క్లెయిమ్", "అప్లై"])
+    is_status = any(w in q for w in ["status", "check", "స్థితి", "అప్డేట్"])
+    
+    plot_crop = "Cotton"
+    plot_health = "HEALTHY"
+    plot_ndvi = 0.68
+    
+    # Bind to matching mock plots from Alerts Feed state to sync conditions
+    matching_alert = None
+    for alert in DISPATCHED_ALERTS_FEED:
+        if alert.get("plot_id") == request.plot_id:
+            matching_alert = alert
+            plot_crop = alert.get("crop_type", "Cotton")
+            plot_health = "STRESSED" if alert.get("tier") == "PREVENTIVE_ADVISORY" else "CRITICAL"
+            plot_ndvi = 0.38 if plot_health == "CRITICAL" else 0.52
+            break
+
+    if is_health:
+        if plot_health == "HEALTHY":
+            response_en = f"Your {plot_crop} field is healthy with good vegetation greenness (NDVI {plot_ndvi}). No action is needed at this time."
+            response_te = f"మీ {plot_crop} పొలం ఆరోగ్యంగా ఉంది, పచ్చదనం సూచీ (NDVI) {plot_ndvi} గా ఉంది. ప్రస్తుతానికి ఎటువంటి చర్య అవసరం లేదు."
+        elif plot_health == "STRESSED":
+            response_en = f"Warning: Your {plot_crop} field is showing early moisture dryness stress (NDVI {plot_ndvi}). We recommend applying irrigation within 48 hours."
+            response_te = f"హెచ్చరిక: మీ {plot_crop} పొలంలో తేమ శాతం తగ్గుతున్నట్లు పచ్చదనం సూచీ (NDVI) {plot_ndvi} చూపుతోంది. రాబోయే 48 గంటల్లో నీటి తడులు అందించవలసిందిగా సిఫార్సు చేయబడింది."
+        else: # CRITICAL / CLAIM Triggered
+            response_en = f"Critical damage detected: NDVI canopy greenness dropped to {plot_ndvi}. Your weather station reports severe rainfall deficit. Crop loss is confirmed, and a PMFBY claim evidence packet is ready."
+            response_te = f"తీव्रమైన పంట నష్టం గుర్తించబడింది: పచ్చదనం సూచీ (NDVI) {plot_ndvi} కి పడిపోయింది. మీ ప్రాంతంలో తీవ్రమైన వర్షపాత లోటు నమోదైంది. పంట నష్టం ధృవీకరించబడింది మరియు PMFBY పరిహారం నివేదిక సిద్ధంగా ఉంది."
+    elif is_claim:
+        already_filed = any(c.get("plot_id") == request.plot_id for c in FILED_CLAIMS_DB)
+        if already_filed:
+            claim_rec = next(c for c in FILED_CLAIMS_DB if c.get("plot_id") == request.plot_id)
+            ack = claim_rec.get("acknowledgment_id", "PMFBY-TEL-2026-X1")
+            response_en = f"Your claim is already submitted and registered. Reference ID is {ack}."
+            response_te = f"మీ క్లెయిమ్ ఇప్పటికే విజయవంతంగా సమర్పించబడింది. మీ రిఫరెన్స్ సంఖ్య: {ack}."
+        else:
+            ack_id = f"PMFBY-TEL-2026-{random.randint(10000, 99999)}"
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S IST")
+            
+            # File officially
+            claim_record = {
+                "farmer_id": "FARMER-KISAN",
+                "plot_id": request.plot_id,
+                "crop_type": plot_crop,
+                "damage_score": 0.45 if plot_health == "CRITICAL" else 0.25,
+                "confidence_pct": 92.5,
+                "evidence_pdf_url": f"/static/pdf/evidence_{request.plot_id}.pdf",
+                "consent_channel": "Kisan Spoken Voice Confirmation",
+                "consent_timestamp": now_str,
+                "acknowledgment_id": ack_id,
+                "submitted_at": now_str,
+                "status": "APPROVED_BY_INSURER"
+            }
+            FILED_CLAIMS_DB.append(claim_record)
+            
+            # Update alerts feed status
+            for alert in DISPATCHED_ALERTS_FEED:
+                if alert["plot_id"] == request.plot_id and alert["tier"] == "PMFBY_CLAIM_ALERT":
+                    alert["status"] = "CLAIM_SUBMITTED"
+                    alert["acknowledgment_id"] = ack_id
+            
+            response_en = f"Ok, I have recorded your voice consent and filed your PMFBY claim. Your official acknowledgment reference number is {ack_id}."
+            response_te = f"సరే, మీ వాయిస్ సమ్మతిని నమోదు చేసుకొని, మీ PMFBY పంట నష్టపరిహారం క్లెయిమ్ సమర్పించాము. మీ అధికారిక రిఫరెన్స్ సంఖ్య: {ack_id}."
+    elif is_status:
+        matching_claim = next((c for c in FILED_CLAIMS_DB if c.get("plot_id") == request.plot_id), None)
+        if matching_claim:
+            status = matching_claim.get("status", "APPROVED_BY_INSURER")
+            ref = matching_claim.get("acknowledgment_id", "")
+            
+            if status == "APPROVED_BY_INSURER":
+                response_en = f"Your PMFBY claim (Ref: {ref}) has been approved and processed by the insurance company."
+                response_te = f"మీ PMFBY క్లెయిమ్ (రిఫరెన్స్ సంఖ్య: {ref}) భీమా సంస్థ చేత ఆమోదించబడింది మరియు ప్రాసెస్ చేయబడింది."
+            elif status == "REJECTED_BY_INSURER":
+                response_en = f"Your claim (Ref: {ref}) was rejected by the insurance company. You can appeal to the DLMC committee."
+                response_te = f"మీ క్లెయిమ్ (రిఫరెన్స్ సంఖ్య: {ref}) తిరస్కరించబడింది. మీరు జిల్లా స్థాయి కమిటీ (DLMC) కి అప్పీలు చేయవచ్చు."
+            else: # DLMC_REVIEW
+                response_en = f"Your claim (Ref: {ref}) is currently pending review under the District Level Monitoring Committee (DLMC)."
+                response_te = f"మీ క్లెయిమ్ (రిఫరెన్స్ సంఖ్య: {ref}) ప్రస్తుతం జిల్లా స్థాయి మానిటరింగ్ కమిటీ (DLMC) సమీక్షలో ఉంది."
+        else:
+            response_en = "No claim has been filed yet for this plot. If your crop is damaged, you can say 'File my crop loss claim now' to submit."
+            response_te = "ఈ పొలానికి ఇంకా ఎటువంటి క్లెయిమ్ సమర్పించబడలేదు. ఒకవేళ మీ పంట నష్టపోతే, క్లెయిమ్ చేయడానికి 'నా పంట నష్టం క్లెయిమ్ సమర్పించు' అని చెప్పండి."
+    else:
+        response_en = "Namaskaram! I am FasalRakshak Voice Assistant. I can help you check field health, verify PMFBY status, or file a crop loss claim. What would you like to do?"
+        response_te = "నమస్కారం! నేను ఫసల్ రక్షక్ వాయిస్ అసిస్టెంట్. నేను మీకు పొలం ఆరోగ్యం తెలుసుకోవడానికి, PMFBY క్లెయిమ్ చేయడానికి లేదా క్లెయిమ్ స్థితిని తనిఖీ చేయడానికి సహాయం చేయగలను. మీరు ఏమి చేయాలనుకుంటున్నారు?"
+
+    return {
+        "text_response": response_te if lang == "TE" else response_en,
+        "translated_text": response_en if lang == "TE" else response_te,
+        "language": lang,
+        "intent_detected": "HEALTH" if is_health else "CLAIM" if is_claim else "STATUS" if is_status else "HELP"
+    }

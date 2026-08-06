@@ -8,7 +8,10 @@ import {
   CheckCircle, 
   Clock, 
   PhoneCall, 
-  MessageSquare 
+  MessageSquare,
+  ShieldCheck,
+  XCircle,
+  AlertCircle
 } from "lucide-react";
 
 export interface AlertLogItem {
@@ -25,7 +28,19 @@ export interface AlertLogItem {
   acknowledgment_id?: string;
 }
 
-export function RealTimeAlertsFeed() {
+interface RealTimeAlertsFeedProps {
+  sharedAlerts?: AlertLogItem[];
+  onUpdateAlert?: (id: string, updatedFields: Partial<AlertLogItem>) => void;
+  filedClaims?: any[];
+  onOverrideClaim?: (ackId: string, action: string) => void;
+}
+
+export function RealTimeAlertsFeed({
+  sharedAlerts,
+  onUpdateAlert,
+  filedClaims = [],
+  onOverrideClaim
+}: RealTimeAlertsFeedProps) {
   const [alerts, setAlerts] = useState<AlertLogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +74,7 @@ export function RealTimeAlertsFeed() {
   ];
 
   const fetchAlerts = async () => {
+    if (sharedAlerts) return; // Skip fetch if using shared parent state
     try {
       setLoading(true);
       setError(null);
@@ -68,7 +84,6 @@ export function RealTimeAlertsFeed() {
       setAlerts(data);
       setIsDemoMode(false);
     } catch (err: any) {
-      // Switch to local high-fidelity interactive fallback
       setAlerts(getFallbackAlerts());
       setIsDemoMode(true);
     } finally {
@@ -78,25 +93,65 @@ export function RealTimeAlertsFeed() {
 
   useEffect(() => {
     fetchAlerts();
+  }, [sharedAlerts]);
+
+  useEffect(() => {
+    if (sharedAlerts) return;
     const interval = setInterval(fetchAlerts, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [sharedAlerts]);
 
   const handleSimulateWhatsAppApproval = async (alert: AlertLogItem) => {
     setSimulatingId(alert.id);
     
     // Simulate latency
     await new Promise((resolve) => setTimeout(resolve, 1200));
+    const ackId = `PMFBY-TEL-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    if (sharedAlerts && onUpdateAlert && onOverrideClaim) {
+      // Direct integration into unified shared React state
+      onUpdateAlert(alert.id, {
+        status: "CLAIM_SUBMITTED",
+        acknowledgment_id: ackId
+      });
+      
+      const claimRecord = {
+        farmer_id: "FARMER-MOCK-WA",
+        plot_id: alert.plot_id,
+        farmer_name: alert.farmer_name,
+        crop_type: alert.crop_type,
+        damage_score: 0.55,
+        confidence_pct: alert.confidence_score_pct,
+        evidence_pdf_url: alert.evidence_pdf_url || "#",
+        consent_channel: "WhatsApp Button Approval",
+        consent_timestamp: new Date().toLocaleString(),
+        acknowledgment_id: ackId,
+        submitted_at: new Date().toLocaleString(),
+        status: "APPROVED_BY_INSURER"
+      };
+      
+      // Post to mock claim submit API on backend to keep server db aligned
+      fetch("http://localhost:8000/mock/pmfby/submit-claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(claimRecord)
+      }).catch(() => {});
+
+      if (onOverrideClaim) {
+        onOverrideClaim(ackId, "APPROVED_BY_INSURER");
+      }
+      setSimulatingId(null);
+      return;
+    }
 
     if (isDemoMode) {
-      // Interactive local state update for offline demo mode
       setAlerts((prev) =>
         prev.map((a) =>
           a.id === alert.id
             ? {
                 ...a,
                 status: "CLAIM_SUBMITTED" as const,
-                acknowledgment_id: `PMFBY-TEL-2026-${Math.floor(10000 + Math.random() * 90000)}`,
+                acknowledgment_id: ackId,
               }
             : a
         )
@@ -105,7 +160,6 @@ export function RealTimeAlertsFeed() {
       return;
     }
 
-    // Otherwise, hit real API
     let phone = "+919848022337";
     if (alert.plot_id === "plot-102") phone = "+919848022339";
     else if (alert.plot_id === "plot-103") phone = "+919848022338";
@@ -117,9 +171,7 @@ export function RealTimeAlertsFeed() {
 
       const res = await fetch("http://localhost:8000/api/pmfby/webhook/whatsapp", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData.toString(),
       });
 
@@ -132,6 +184,8 @@ export function RealTimeAlertsFeed() {
     }
   };
 
+  const activeAlerts = sharedAlerts || alerts;
+
   return (
     <div className="rounded-xl border border-border bg-card/65 backdrop-blur-md p-6 shadow-xl space-y-6">
       {/* Header */}
@@ -141,7 +195,7 @@ export function RealTimeAlertsFeed() {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-bold text-foreground">Real-Time Dispatch Feed</h3>
-              {isDemoMode && (
+              {(isDemoMode || !sharedAlerts) && (
                 <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-amber-400">
                   Demo Mode
                 </span>
@@ -150,22 +204,28 @@ export function RealTimeAlertsFeed() {
             <p className="text-xs text-muted-foreground">Alerts sent to farmers via WhatsApp, SMS, &amp; Voice</p>
           </div>
         </div>
-        <button
-          onClick={fetchAlerts}
-          disabled={loading}
-          className="rounded-full px-3 py-1.5 border border-border bg-card/85 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 text-xs hover:border-primary/50"
-          title="Manual refresh"
-        >
-          <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-          Refresh
-        </button>
+        {!sharedAlerts && (
+          <button
+            onClick={fetchAlerts}
+            disabled={loading}
+            className="rounded-full px-3 py-1.5 border border-border bg-card/85 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 text-xs hover:border-primary/50 cursor-pointer"
+            title="Manual refresh"
+          >
+            <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+            Refresh
+          </button>
+        )}
       </div>
 
       {/* List */}
-      <div className="space-y-4 max-h-[460px] overflow-y-auto pr-1">
-        {alerts.map((item) => {
+      <div className="space-y-4 max-h-[520px] overflow-y-auto pr-1">
+        {activeAlerts.map((item) => {
           const isAdvisory = item.tier === "PREVENTIVE_ADVISORY";
           const isSubmitted = item.status === "CLAIM_SUBMITTED";
+          
+          // Match matching submitted claim to check audit logs and manual overrides
+          const matchingClaim = filedClaims.find((c) => c.plot_id === item.plot_id);
+          const claimStatus = matchingClaim?.status || "APPROVED_BY_INSURER";
           
           return (
             <div
@@ -196,7 +256,7 @@ export function RealTimeAlertsFeed() {
                     {item.farmer_name} • {item.crop_type}
                   </span>
                 </div>
-                <div className="text-[0.68rem] text-muted-foreground flex items-center gap-1">
+                <div className="text-[0.68rem] text-muted-foreground flex items-center gap-1 font-semibold">
                   <Clock className="size-3" />
                   {item.created_at}
                 </div>
@@ -209,13 +269,21 @@ export function RealTimeAlertsFeed() {
                 </p>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
-                  <div className="flex gap-2">
-                    <span className="text-[0.68rem] text-muted-foreground bg-soil px-2 py-0.5 rounded border border-border/80">
-                      Signal Confidence: {item.confidence_score_pct}%
-                    </span>
-                    {!isAdvisory && (
-                      <span className="text-[0.68rem] text-muted-foreground bg-soil px-2 py-0.5 rounded border border-border/80 flex items-center gap-1">
-                        <PhoneCall className="size-2.5 text-amber-400" /> Outbound Call Active
+                  <div className="flex flex-col gap-1">
+                    <div className="flex gap-2">
+                      <span className="text-[0.68rem] text-muted-foreground bg-soil px-2 py-0.5 rounded border border-border/80 font-semibold">
+                        Signal Confidence: {item.confidence_score_pct}%
+                      </span>
+                      {!isAdvisory && (
+                        <span className="text-[0.68rem] text-muted-foreground bg-soil px-2 py-0.5 rounded border border-border/80 flex items-center gap-1 font-semibold">
+                          <PhoneCall className="size-2.5 text-amber-400 animate-pulse" /> Outbound Call Active
+                        </span>
+                      )}
+                    </div>
+                    {/* Consent Audit Log info */}
+                    {isSubmitted && matchingClaim && (
+                      <span className="text-[10px] text-primary italic font-semibold">
+                        Consent Audit: Consent obtained via {matchingClaim.consent_channel} on {matchingClaim.consent_timestamp || matchingClaim.submitted_at}
                       </span>
                     )}
                   </div>
@@ -223,26 +291,22 @@ export function RealTimeAlertsFeed() {
                   {/* Action Panel */}
                   <div className="flex items-center gap-2">
                     {/* PDF download if available */}
-                    {item.evidence_pdf_url && !isDemoMode && (
+                    {item.evidence_pdf_url && (
                       <a
-                        href={`http://localhost:8000${item.evidence_pdf_url}`}
+                        href={item.evidence_pdf_url.startsWith("http") ? item.evidence_pdf_url : `http://localhost:8000${item.evidence_pdf_url}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-[0.68rem] text-primary hover:underline font-bold"
+                        onClick={(e) => {
+                          if (isDemoMode) {
+                            e.preventDefault();
+                            alert("PDF downloads require the FastAPI backend to be running. This works dynamically when online!");
+                          }
+                        }}
                       >
                         <FileText className="size-3.5" />
                         View Evidence Report (PDF)
                       </a>
-                    )}
-                    
-                    {item.evidence_pdf_url && isDemoMode && (
-                      <button
-                        onClick={() => alert("PDF downloads require the FastAPI backend to be running. This works dynamically when online!")}
-                        className="inline-flex items-center gap-1 text-[0.68rem] text-primary hover:underline font-bold"
-                      >
-                        <FileText className="size-3.5" />
-                        View Evidence Report (PDF)
-                      </button>
                     )}
 
                     {/* Status / Quick Action button */}
@@ -252,14 +316,21 @@ export function RealTimeAlertsFeed() {
                         Advisory Dispatched
                       </div>
                     ) : isSubmitted ? (
-                      <div className="flex flex-col items-end gap-0.5">
-                        <div className="flex items-center gap-1 text-[0.68rem] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                          <CheckCircle className="size-3" />
-                          Claim Registered
+                      <div className="flex flex-col items-end gap-1">
+                        <div className={`flex items-center gap-1 text-[0.68rem] font-bold border px-2 py-0.5 rounded-full ${
+                          claimStatus === "APPROVED_BY_INSURER"
+                            ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                            : claimStatus === "REJECTED_BY_INSURER"
+                            ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                            : "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                        }`}>
+                          {claimStatus === "APPROVED_BY_INSURER" && "Claim Approved"}
+                          {claimStatus === "REJECTED_BY_INSURER" && "Claim Rejected"}
+                          {claimStatus === "DLMC_REVIEW" && "DLMC Review Pending"}
                         </div>
                         {item.acknowledgment_id && (
                           <span className="text-[0.62rem] text-muted-foreground font-mono">
-                            ID: {item.acknowledgment_id}
+                            Ref: {item.acknowledgment_id}
                           </span>
                         )}
                       </div>
@@ -267,7 +338,7 @@ export function RealTimeAlertsFeed() {
                       <button
                         onClick={() => handleSimulateWhatsAppApproval(item)}
                         disabled={simulatingId === item.id}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-2.5 py-1 text-[0.68rem] font-bold text-white hover:bg-rose-500 transition-colors shadow-sm disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-2.5 py-1 text-[0.68rem] font-bold text-white hover:bg-rose-500 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                       >
                         <MessageSquare className="size-3 text-white" />
                         {simulatingId === item.id ? "Auto Filing..." : "Simulate WhatsApp 'Submit' Reply"}
@@ -275,6 +346,48 @@ export function RealTimeAlertsFeed() {
                     )}
                   </div>
                 </div>
+
+                {/* Insurer Manual Overrides panel (Kisan v3.0 feature) */}
+                {isSubmitted && item.acknowledgment_id && onOverrideClaim && (
+                  <div className="border-t border-border/40 pt-2.5 mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
+                      🛡️ Claim Actions (Insurer Override)
+                    </span>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => onOverrideClaim(item.acknowledgment_id!, "APPROVED_BY_INSURER")}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                          claimStatus === "APPROVED_BY_INSURER"
+                            ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400 font-extrabold"
+                            : "bg-soil border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <ShieldCheck className="size-3" /> Approve
+                      </button>
+                      <button
+                        onClick={() => onOverrideClaim(item.acknowledgment_id!, "REJECTED_BY_INSURER")}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                          claimStatus === "REJECTED_BY_INSURER"
+                            ? "bg-rose-500/20 border-rose-500/30 text-rose-400 font-extrabold"
+                            : "bg-soil border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <XCircle className="size-3" /> Reject
+                      </button>
+                      <button
+                        onClick={() => onOverrideClaim(item.acknowledgment_id!, "DLMC_REVIEW")}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                          claimStatus === "DLMC_REVIEW"
+                            ? "bg-amber-500/20 border-amber-500/30 text-amber-400 font-extrabold"
+                            : "bg-soil border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <AlertCircle className="size-3" /> Flag DLMC
+                      </button>
+                    </div>
+                  </div>
+                )}
+
               </div>
             </div>
           );
