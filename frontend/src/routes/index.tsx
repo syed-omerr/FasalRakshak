@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { InteractiveMap, INITIAL_PLOTS, FarmPlot } from "@/components/MapContainer";
+import { FarmPlot, INITIAL_PLOTS } from "@/lib/plots";
 import { NdviAnalytics } from "@/components/NdviAnalytics";
 import { PmfbyClaimCard } from "@/components/PmfbyClaimCard";
 import { RealTimeAlertsFeed } from "@/components/RealTimeAlertsFeed";
 import { OfficerAggregateView } from "@/components/OfficerAggregateView";
+
 
 
 import heroField from "@/assets/hero-field.jpg";
@@ -154,6 +155,14 @@ function Index() {
   const [weatherList, setWeatherList] = useState<WeatherData[]>([]);
   const [language, setLanguage] = useState<"EN" | "HI" | "TE">("EN");
   const [activeTab, setActiveTab] = useState<"satellite" | "pmfby" | "mandi" | "onboarding">("onboarding");
+  const [InteractiveMap, setInteractiveMap] = useState<any>(null);
+
+  useEffect(() => {
+    // Dynamically load the Leaflet Map component ONLY on the client to avoid SSR window errors
+    import("@/components/MapContainer").then((mod) => {
+      setInteractiveMap(() => mod.InteractiveMap);
+    });
+  }, []);
 
   useEffect(() => {
     async function loadWeather() {
@@ -230,6 +239,7 @@ function Index() {
               weatherList={weatherList}
               onAddNewPlot={handleAddNewPlot}
               onRemovePlot={handleRemovePlot}
+              InteractiveMap={InteractiveMap}
             />
           </div>
         )}
@@ -478,6 +488,7 @@ function DashboardSection({
   weatherList,
   onAddNewPlot,
   onRemovePlot,
+  InteractiveMap,
 }: {
   plots: FarmPlot[];
   selectedPlot: FarmPlot;
@@ -487,6 +498,7 @@ function DashboardSection({
   weatherList: WeatherData[];
   onAddNewPlot: (newPlot: FarmPlot) => void;
   onRemovePlot: (plotId: string) => void;
+  InteractiveMap: any;
 }) {
   return (
     <section id="map" className="py-28 md:py-36 bg-soil/40 border-b border-border">
@@ -584,15 +596,21 @@ function DashboardSection({
         {/* Grid: Map + Analytics */}
         <div id="telemetry" className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-4">
           <div className="lg:col-span-7">
-            <InteractiveMap
-              plots={plots}
-              selectedPlot={selectedPlot}
-              onSelectPlot={(p) => setSelectedPlot(p)}
-              showNdviOverlay={showNdviOverlay}
-              onToggleNdviOverlay={() => setShowNdviOverlay(!showNdviOverlay)}
-              onAddNewPlot={onAddNewPlot}
-              onRemovePlot={onRemovePlot}
-            />
+            {InteractiveMap ? (
+              <InteractiveMap
+                plots={plots}
+                selectedPlot={selectedPlot}
+                onSelectPlot={(p) => setSelectedPlot(p)}
+                showNdviOverlay={showNdviOverlay}
+                onToggleNdviOverlay={() => setShowNdviOverlay(!showNdviOverlay)}
+                onAddNewPlot={onAddNewPlot}
+                onRemovePlot={onRemovePlot}
+              />
+            ) : (
+              <div className="h-[540px] flex items-center justify-center bg-card border border-border rounded-xl text-xs text-muted-foreground animate-pulse">
+                Loading Interactive GIS Map...
+              </div>
+            )}
           </div>
           <div className="lg:col-span-5">
             <NdviAnalytics plot={selectedPlot} />
