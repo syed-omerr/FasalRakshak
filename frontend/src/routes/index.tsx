@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { InteractiveMap, DEMO_PLOTS, FarmPlot } from "@/components/MapContainer";
+import { InteractiveMap, INITIAL_PLOTS, FarmPlot } from "@/components/MapContainer";
 import { NdviAnalytics } from "@/components/NdviAnalytics";
 
 import heroField from "@/assets/hero-field.jpg";
@@ -22,6 +22,7 @@ import {
   DollarSign,
   Compass,
   ArrowDown,
+  PlusCircle,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -110,7 +111,7 @@ const traits = [
   {
     n: "01",
     title: "Sentinel-2 Satellite Ingestion",
-    body: "Multi-spectral 10-meter pixel resolution mapping NIR and Red bands for real-time NDVI crop health assessment.",
+    body: "Multi-spectral 10-meter pixel resolution mapping NIR and Red bands for real-time NDVI crop health assessment across all Indian districts.",
   },
   {
     n: "02",
@@ -140,7 +141,8 @@ interface WeatherData {
 
 function Index() {
   const y = useScrollY();
-  const [selectedPlot, setSelectedPlot] = useState<FarmPlot>(DEMO_PLOTS[0]);
+  const [plotList, setPlotList] = useState<FarmPlot[]>(INITIAL_PLOTS);
+  const [selectedPlot, setSelectedPlot] = useState<FarmPlot>(INITIAL_PLOTS[0]);
   const [showNdviOverlay, setShowNdviOverlay] = useState<boolean>(true);
   const [weatherList, setWeatherList] = useState<WeatherData[]>([]);
   const [language, setLanguage] = useState<"EN" | "HI" | "TE">("EN");
@@ -174,6 +176,11 @@ function Index() {
     ];
   }
 
+  const handleAddNewPlot = (newPlot: FarmPlot) => {
+    setPlotList((prev) => [newPlot, ...prev]);
+    setSelectedPlot(newPlot);
+  };
+
   return (
     <main className="overflow-x-hidden bg-background text-foreground">
       <Nav language={language} setLanguage={setLanguage} />
@@ -188,11 +195,13 @@ function Index() {
 
       {/* Interactive Map & Telemetry Dashboard Section */}
       <DashboardSection
+        plots={plotList}
         selectedPlot={selectedPlot}
         setSelectedPlot={setSelectedPlot}
         showNdviOverlay={showNdviOverlay}
         setShowNdviOverlay={setShowNdviOverlay}
         weatherList={weatherList}
+        onAddNewPlot={handleAddNewPlot}
       />
 
       {/* AI System Traits / Architecture Section */}
@@ -295,7 +304,7 @@ function Hero({ y }: { y: number }) {
           style={{ animationDelay: "240ms" }}
         >
           <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-            Integrating 10m Sentinel-2 satellite imagery, 7-day predictive disease rule engines, irrigation water stress indicators, and live Agmarknet mandi market analytics.
+            Integrating 10m Sentinel-2 satellite imagery, 7-day predictive disease rule engines, irrigation water stress indicators, and live Agmarknet mandi market analytics across any region in India.
           </p>
           <a
             href="#overview"
@@ -409,17 +418,21 @@ function StatsBand() {
 }
 
 function DashboardSection({
+  plots,
   selectedPlot,
   setSelectedPlot,
   showNdviOverlay,
   setShowNdviOverlay,
   weatherList,
+  onAddNewPlot,
 }: {
+  plots: FarmPlot[];
   selectedPlot: FarmPlot;
   setSelectedPlot: (p: FarmPlot) => void;
   showNdviOverlay: boolean;
   setShowNdviOverlay: (v: boolean) => void;
   weatherList: WeatherData[];
+  onAddNewPlot: (newPlot: FarmPlot) => void;
 }) {
   return (
     <section id="map" className="py-28 md:py-36 bg-soil/40 border-b border-border">
@@ -431,13 +444,17 @@ function DashboardSection({
               <h2 className="mt-4 text-[clamp(2.4rem,6vw,5rem)]">
                 Interactive Satellite &amp; Telemetry Map
               </h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                Select from regional agricultural presets, search any district in India, or add a custom field.
+              </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {DEMO_PLOTS.map((plot) => (
+
+            <div className="flex flex-wrap items-center gap-2 max-w-2xl">
+              {plots.map((plot) => (
                 <button
                   key={plot.id}
                   onClick={() => setSelectedPlot(plot)}
-                  className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
                     plot.id === selectedPlot.id
                       ? "border-primary bg-primary text-primary-foreground shadow-md"
                       : "border-border bg-card text-muted-foreground hover:text-foreground"
@@ -494,10 +511,12 @@ function DashboardSection({
         <div id="telemetry" className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-4">
           <div className="lg:col-span-7">
             <InteractiveMap
+              plots={plots}
               selectedPlot={selectedPlot}
               onSelectPlot={(p) => setSelectedPlot(p)}
               showNdviOverlay={showNdviOverlay}
               onToggleNdviOverlay={() => setShowNdviOverlay(!showNdviOverlay)}
+              onAddNewPlot={onAddNewPlot}
             />
           </div>
           <div className="lg:col-span-5">

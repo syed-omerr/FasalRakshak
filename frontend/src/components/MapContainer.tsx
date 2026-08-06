@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import { Layers, MapPin, Eye, AlertTriangle, CheckCircle, Flame } from "lucide-react";
+import { Layers, MapPin, Eye, AlertTriangle, CheckCircle, Flame, Search, Plus, Navigation } from "lucide-react";
 
 // Fix standard Leaflet default marker icon path issue in Webpack/Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -12,8 +12,8 @@ L.Icon.Default.mergeOptions({
 });
 
 export interface FarmPlot {
-  id: str;
-  name: str;
+  id: string;
+  name: string;
   crop_type: string;
   farmer: string;
   location: string;
@@ -24,7 +24,7 @@ export interface FarmPlot {
   polygon: [number, number][];
 }
 
-const DEMO_PLOTS: FarmPlot[] = [
+export const INITIAL_PLOTS: FarmPlot[] = [
   {
     id: "plot-101",
     name: "Warangal North Field",
@@ -93,13 +93,66 @@ const DEMO_PLOTS: FarmPlot[] = [
       [17.1382, 79.6190],
     ],
   },
+  {
+    id: "plot-105",
+    name: "Khammam Chilli & Rice Farm",
+    crop_type: "Chilli / Rice",
+    farmer: "Venkateswarlu M",
+    location: "Khammam, Telangana",
+    acreage: 2.9,
+    ndvi_mean: 0.71,
+    health_status: "HEALTHY",
+    center: [17.2473, 80.1514],
+    polygon: [
+      [17.2485, 80.1500],
+      [17.2495, 80.1530],
+      [17.2460, 80.1535],
+      [17.2450, 80.1505],
+    ],
+  },
+  {
+    id: "plot-106",
+    name: "Nizamabad Turmeric & Paddy Field",
+    crop_type: "Turmeric",
+    farmer: "Gangadhar R",
+    location: "Nizamabad, Telangana",
+    acreage: 3.5,
+    ndvi_mean: 0.63,
+    health_status: "MODERATE",
+    center: [18.6725, 78.0941],
+    polygon: [
+      [18.6738, 78.0925],
+      [18.6748, 78.0955],
+      [18.6712, 78.0960],
+      [18.6702, 78.0930],
+    ],
+  },
+  {
+    id: "plot-107",
+    name: "Guntur Chilli & Tobacco Belt",
+    crop_type: "Chilli",
+    farmer: "Subba Rao P",
+    location: "Guntur, Andhra Pradesh",
+    acreage: 4.2,
+    ndvi_mean: 0.78,
+    health_status: "HEALTHY",
+    center: [16.3067, 80.4365],
+    polygon: [
+      [16.3080, 80.4350],
+      [16.3090, 80.4380],
+      [16.3055, 80.4385],
+      [16.3045, 80.4355],
+    ],
+  },
 ];
 
 interface MapComponentProps {
+  plots: FarmPlot[];
   selectedPlot: FarmPlot;
   onSelectPlot: (plot: FarmPlot) => void;
   showNdviOverlay: boolean;
   onToggleNdviOverlay: () => void;
+  onAddNewPlot: (newPlot: FarmPlot) => void;
 }
 
 function RecenterMap({ center }: { center: [number, number] }) {
@@ -111,40 +164,149 @@ function RecenterMap({ center }: { center: [number, number] }) {
 }
 
 export function InteractiveMap({
+  plots,
   selectedPlot,
   onSelectPlot,
   showNdviOverlay,
   onToggleNdviOverlay,
+  onAddNewPlot,
 }: MapComponentProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newPlotName, setNewPlotName] = useState("");
+  const [newFarmerName, setNewFarmerName] = useState("");
+  const [newCropType, setNewCropType] = useState("Cotton");
+  const [newLocationName, setNewLocationName] = useState("Hyderabad, Telangana");
+  const [newLat, setNewLat] = useState("17.3850");
+  const [newLon, setNewLon] = useState("78.4867");
+
   const getPolygonColor = (status: string) => {
-    if (!showNdviOverlay) return "#3b82f6"; // standard blue boundary
+    if (!showNdviOverlay) return "#3b82f6";
     switch (status) {
       case "HEALTHY":
-        return "#22c55e"; // bright green
+        return "#22c55e";
       case "MODERATE":
-        return "#eab308"; // amber yellow
+        return "#eab308";
       case "STRESSED":
-        return "#ef4444"; // red
+        return "#ef4444";
       default:
         return "#94a3b8";
     }
   };
 
+  const handleLocationSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    // Search matching existing plot or geocode presets
+    const matched = plots.find(
+      (p) =>
+        p.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.crop_type.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    if (matched) {
+      onSelectPlot(matched);
+    } else {
+      // Jump to coordinates if entered as lat,lon
+      const parts = searchQuery.split(",").map((s) => parseFloat(s.trim()));
+      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        const customPlot: FarmPlot = {
+          id: `custom-${Date.now()}`,
+          name: `Custom Location (${parts[0].toFixed(2)}, ${parts[1].toFixed(2)})`,
+          crop_type: "Cotton",
+          farmer: "Local Farmer",
+          location: `Coordinates ${parts[0].toFixed(2)}, ${parts[1].toFixed(2)}`,
+          acreage: 2.0,
+          ndvi_mean: 0.65,
+          health_status: "HEALTHY",
+          center: [parts[0], parts[1]],
+          polygon: [
+            [parts[0] + 0.001, parts[1] - 0.001],
+            [parts[0] + 0.001, parts[1] + 0.001],
+            [parts[0] - 0.001, parts[1] + 0.001],
+            [parts[0] - 0.001, parts[1] - 0.001],
+          ],
+        };
+        onAddNewPlot(customPlot);
+      }
+    }
+  };
+
+  const handleCreatePlotSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const latNum = parseFloat(newLat) || selectedPlot.center[0];
+    const lonNum = parseFloat(newLon) || selectedPlot.center[1];
+
+    const createdPlot: FarmPlot = {
+      id: `plot-${Date.now()}`,
+      name: newPlotName || "New Custom Field",
+      crop_type: newCropType,
+      farmer: newFarmerName || "Smallholder Farmer",
+      location: newLocationName || "Telangana Region",
+      acreage: 2.5,
+      ndvi_mean: 0.66,
+      health_status: "HEALTHY",
+      center: [latNum, lonNum],
+      polygon: [
+        [latNum + 0.0012, lonNum - 0.0015],
+        [latNum + 0.0018, lonNum + 0.0015],
+        [latNum - 0.0012, lonNum + 0.0018],
+        [latNum - 0.0018, lonNum - 0.0012],
+      ],
+    };
+
+    onAddNewPlot(createdPlot);
+    setShowAddModal(false);
+    setNewPlotName("");
+    setNewFarmerName("");
+  };
+
   return (
-    <div className="relative h-[480px] w-full overflow-hidden rounded-xl border border-border shadow-2xl bg-card">
-      {/* Map Control Bar Overlay */}
-      <div className="absolute top-4 right-4 z-[1000] flex items-center gap-3 rounded-lg bg-soil/90 backdrop-blur-md p-2.5 border border-border/80 shadow-lg text-xs">
-        <button
-          onClick={onToggleNdviOverlay}
-          className={`flex items-center gap-2 rounded-md px-3 py-1.5 font-medium transition-all ${
-            showNdviOverlay
-              ? "bg-primary text-primary-foreground shadow-md"
-              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-          }`}
-        >
-          <Flame className="size-4" />
-          <span>{showNdviOverlay ? "NDVI Satellite Heatmap: ON" : "NDVI Satellite Heatmap: OFF"}</span>
-        </button>
+    <div className="relative h-[520px] w-full overflow-hidden rounded-xl border border-border shadow-2xl bg-card flex flex-col">
+      {/* Top Search & Controls Bar Overlay */}
+      <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-wrap items-center justify-between gap-3 bg-soil/95 backdrop-blur-md p-2.5 rounded-lg border border-border/80 shadow-lg text-xs">
+        <form onSubmit={handleLocationSearch} className="flex items-center gap-2 flex-1 max-w-md">
+          <div className="relative w-full">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search region, crop, or lat,lon..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-md bg-card border border-border pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-md bg-secondary px-3 py-1.5 font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors"
+          >
+            Find
+          </button>
+        </form>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 font-semibold transition-colors shadow-sm"
+          >
+            <Plus className="size-4" />
+            <span>Add Custom Field</span>
+          </button>
+
+          <button
+            onClick={onToggleNdviOverlay}
+            className={`flex items-center gap-2 rounded-md px-3 py-1.5 font-medium transition-all ${
+              showNdviOverlay
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            }`}
+          >
+            <Flame className="size-4" />
+            <span>{showNdviOverlay ? "Heatmap: ON" : "Heatmap: OFF"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Legend Overlay */}
@@ -169,65 +331,167 @@ export function InteractiveMap({
       )}
 
       {/* Leaflet Map Renderer */}
-      <MapContainer
-        center={selectedPlot.center}
-        zoom={12}
-        scrollWheelZoom={false}
-        className="h-full w-full"
-      >
-        <RecenterMap center={selectedPlot.center} />
-        
-        {/* OpenStreetMap Satellite Hybrid Tile Layer */}
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+      <div className="flex-1 w-full h-full">
+        <MapContainer
+          center={selectedPlot.center}
+          zoom={12}
+          scrollWheelZoom={false}
+          className="h-full w-full"
+        >
+          <RecenterMap center={selectedPlot.center} />
+          
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-        {DEMO_PLOTS.map((plot) => {
-          const isSelected = plot.id === selectedPlot.id;
-          const color = getPolygonColor(plot.health_status);
+          {plots.map((plot) => {
+            const isSelected = plot.id === selectedPlot.id;
+            const color = getPolygonColor(plot.health_status);
 
-          return (
-            <React.Fragment key={plot.id}>
-              <Polygon
-                positions={plot.polygon}
-                pathOptions={{
-                  color: color,
-                  fillColor: color,
-                  fillOpacity: showNdviOverlay ? 0.45 : 0.25,
-                  weight: isSelected ? 3 : 1.5,
-                }}
-                eventHandlers={{
-                  click: () => onSelectPlot(plot),
-                }}
-              />
-              <Marker
-                position={plot.center}
-                eventHandlers={{
-                  click: () => onSelectPlot(plot),
-                }}
-              >
-                <Popup>
-                  <div className="p-1 space-y-1">
-                    <h4 className="font-bold text-sm text-foreground">{plot.name}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Crop: <strong className="text-foreground">{plot.crop_type}</strong> | {plot.acreage} Ha
-                    </p>
-                    <div className="flex items-center gap-1 text-xs pt-1">
-                      <span>NDVI Index:</span>
-                      <span className="font-semibold px-1.5 py-0.5 rounded bg-primary/20 text-primary">
-                        {plot.ndvi_mean}
-                      </span>
+            return (
+              <React.Fragment key={plot.id}>
+                <Polygon
+                  positions={plot.polygon}
+                  pathOptions={{
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: showNdviOverlay ? 0.45 : 0.25,
+                    weight: isSelected ? 3 : 1.5,
+                  }}
+                  eventHandlers={{
+                    click: () => onSelectPlot(plot),
+                  }}
+                />
+                <Marker
+                  position={plot.center}
+                  eventHandlers={{
+                    click: () => onSelectPlot(plot),
+                  }}
+                >
+                  <Popup>
+                    <div className="p-1 space-y-1">
+                      <h4 className="font-bold text-sm text-foreground">{plot.name}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Crop: <strong className="text-foreground">{plot.crop_type}</strong> | {plot.acreage} Ha
+                      </p>
+                      <div className="flex items-center gap-1 text-xs pt-1">
+                        <span>NDVI Index:</span>
+                        <span className="font-semibold px-1.5 py-0.5 rounded bg-primary/20 text-primary">
+                          {plot.ndvi_mean}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Popup>
-              </Marker>
-            </React.Fragment>
-          );
-        })}
-      </MapContainer>
+                  </Popup>
+                </Marker>
+              </React.Fragment>
+            );
+          })}
+        </MapContainer>
+      </div>
+
+      {/* Add Plot Modal Overlay */}
+      {showAddModal && (
+        <div className="absolute inset-0 z-[2000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-soil border border-border rounded-xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <Navigation className="size-5 text-primary" />
+              Add Custom Farm Field
+            </h3>
+
+            <form onSubmit={handleCreatePlotSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-muted-foreground font-semibold mb-1">Field / Plot Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Warangal South Cotton Plot"
+                  value={newPlotName}
+                  onChange={(e) => setNewPlotName(e.target.value)}
+                  className="w-full bg-card border border-border rounded px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-muted-foreground font-semibold mb-1">Crop Type</label>
+                  <select
+                    value={newCropType}
+                    onChange={(e) => setNewCropType(e.target.value)}
+                    className="w-full bg-card border border-border rounded px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                  >
+                    <option value="Cotton">Cotton</option>
+                    <option value="Groundnut">Groundnut</option>
+                    <option value="Maize">Maize</option>
+                    <option value="Tomato">Tomato</option>
+                    <option value="Rice/Paddy">Rice / Paddy</option>
+                    <option value="Chilli">Chilli</option>
+                    <option value="Turmeric">Turmeric</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-muted-foreground font-semibold mb-1">Farmer Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Ramesh Reddy"
+                    value={newFarmerName}
+                    onChange={(e) => setNewFarmerName(e.target.value)}
+                    className="w-full bg-card border border-border rounded px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-muted-foreground font-semibold mb-1">District / Location</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Warangal, Telangana"
+                  value={newLocationName}
+                  onChange={(e) => setNewLocationName(e.target.value)}
+                  className="w-full bg-card border border-border rounded px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-muted-foreground font-semibold mb-1">Latitude</label>
+                  <input
+                    type="text"
+                    value={newLat}
+                    onChange={(e) => setNewLat(e.target.value)}
+                    className="w-full bg-card border border-border rounded px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted-foreground font-semibold mb-1">Longitude</label>
+                  <input
+                    type="text"
+                    value={newLon}
+                    onChange={(e) => setNewLon(e.target.value)}
+                    className="w-full bg-card border border-border rounded px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-border/60">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 rounded bg-card text-muted-foreground hover:text-foreground font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded bg-primary text-primary-foreground font-semibold shadow"
+                >
+                  Save &amp; Telemetry
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-export { DEMO_PLOTS };
