@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import { Layers, MapPin, Eye, AlertTriangle, CheckCircle, Flame, Search, Plus, Navigation } from "lucide-react";
+import { Layers, MapPin, Eye, AlertTriangle, CheckCircle, Flame, Search, Plus, Navigation, Trash2 } from "lucide-react";
 
 // Fix standard Leaflet default marker icon path issue in Webpack/Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -153,6 +153,7 @@ interface MapComponentProps {
   showNdviOverlay: boolean;
   onToggleNdviOverlay: () => void;
   onAddNewPlot: (newPlot: FarmPlot) => void;
+  onRemovePlot: (plotId: string) => void;
 }
 
 function RecenterMap({ center }: { center: [number, number] }) {
@@ -170,6 +171,7 @@ export function InteractiveMap({
   showNdviOverlay,
   onToggleNdviOverlay,
   onAddNewPlot,
+  onRemovePlot,
 }: MapComponentProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -198,7 +200,6 @@ export function InteractiveMap({
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    // Search matching existing plot or geocode presets
     const matched = plots.find(
       (p) =>
         p.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -209,7 +210,6 @@ export function InteractiveMap({
     if (matched) {
       onSelectPlot(matched);
     } else {
-      // Jump to coordinates if entered as lat,lon
       const parts = searchQuery.split(",").map((s) => parseFloat(s.trim()));
       if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
         const customPlot: FarmPlot = {
@@ -370,12 +370,26 @@ export function InteractiveMap({
                   }}
                 >
                   <Popup>
-                    <div className="p-1 space-y-1">
-                      <h4 className="font-bold text-sm text-foreground">{plot.name}</h4>
+                    <div className="p-1.5 space-y-2">
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className="font-bold text-sm text-foreground">{plot.name}</h4>
+                        {plots.length > 1 && (
+                          <button
+                            title="Remove plot from monitoring"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemovePlot(plot.id);
+                            }}
+                            className="text-rose-400 hover:text-rose-300 p-0.5 rounded transition-colors"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         Crop: <strong className="text-foreground">{plot.crop_type}</strong> | {plot.acreage} Ha
                       </p>
-                      <div className="flex items-center gap-1 text-xs pt-1">
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40">
                         <span>NDVI Index:</span>
                         <span className="font-semibold px-1.5 py-0.5 rounded bg-primary/20 text-primary">
                           {plot.ndvi_mean}

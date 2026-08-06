@@ -23,6 +23,8 @@ import {
   Compass,
   ArrowDown,
   PlusCircle,
+  X,
+  Trash2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -181,6 +183,16 @@ function Index() {
     setSelectedPlot(newPlot);
   };
 
+  const handleRemovePlot = (plotId: string) => {
+    if (plotList.length <= 1) return; // Keep at least one plot
+    const updated = plotList.filter((p) => p.id !== plotId);
+    setPlotList(updated);
+
+    if (selectedPlot.id === plotId && updated.length > 0) {
+      setSelectedPlot(updated[0]);
+    }
+  };
+
   return (
     <main className="overflow-x-hidden bg-background text-foreground">
       <Nav language={language} setLanguage={setLanguage} />
@@ -202,6 +214,7 @@ function Index() {
         setShowNdviOverlay={setShowNdviOverlay}
         weatherList={weatherList}
         onAddNewPlot={handleAddNewPlot}
+        onRemovePlot={handleRemovePlot}
       />
 
       {/* AI System Traits / Architecture Section */}
@@ -425,6 +438,7 @@ function DashboardSection({
   setShowNdviOverlay,
   weatherList,
   onAddNewPlot,
+  onRemovePlot,
 }: {
   plots: FarmPlot[];
   selectedPlot: FarmPlot;
@@ -433,6 +447,7 @@ function DashboardSection({
   setShowNdviOverlay: (v: boolean) => void;
   weatherList: WeatherData[];
   onAddNewPlot: (newPlot: FarmPlot) => void;
+  onRemovePlot: (plotId: string) => void;
 }) {
   return (
     <section id="map" className="py-28 md:py-36 bg-soil/40 border-b border-border">
@@ -445,33 +460,53 @@ function DashboardSection({
                 Interactive Satellite &amp; Telemetry Map
               </h2>
               <p className="text-sm text-muted-foreground mt-2">
-                Select from regional agricultural presets, search any district in India, or add a custom field.
+                Select from regional presets, search any district in India, or add/remove custom fields.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 max-w-2xl">
-              {plots.map((plot) => (
-                <button
-                  key={plot.id}
-                  onClick={() => setSelectedPlot(plot)}
-                  className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                    plot.id === selectedPlot.id
-                      ? "border-primary bg-primary text-primary-foreground shadow-md"
-                      : "border-border bg-card text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <span
-                    className={`size-2 rounded-full ${
-                      plot.health_status === "HEALTHY"
-                        ? "bg-emerald-400"
-                        : plot.health_status === "MODERATE"
-                        ? "bg-amber-400"
-                        : "bg-rose-400"
+              {plots.map((plot) => {
+                const active = plot.id === selectedPlot.id;
+                return (
+                  <div
+                    key={plot.id}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
+                      active
+                        ? "border-primary bg-primary text-primary-foreground shadow-md"
+                        : "border-border bg-card text-muted-foreground hover:text-foreground"
                     }`}
-                  />
-                  <span>{plot.name}</span>
-                </button>
-              ))}
+                  >
+                    <button
+                      onClick={() => setSelectedPlot(plot)}
+                      className="flex items-center gap-2"
+                    >
+                      <span
+                        className={`size-2 rounded-full ${
+                          plot.health_status === "HEALTHY"
+                            ? "bg-emerald-400"
+                            : plot.health_status === "MODERATE"
+                            ? "bg-amber-400"
+                            : "bg-rose-400"
+                        }`}
+                      />
+                      <span>{plot.name}</span>
+                    </button>
+
+                    {plots.length > 1 && (
+                      <button
+                        title="Remove plot from monitoring"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemovePlot(plot.id);
+                        }}
+                        className="ml-1 text-muted-foreground hover:text-rose-400 p-0.5 rounded-full transition-colors"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </Reveal>
@@ -517,6 +552,7 @@ function DashboardSection({
               showNdviOverlay={showNdviOverlay}
               onToggleNdviOverlay={() => setShowNdviOverlay(!showNdviOverlay)}
               onAddNewPlot={onAddNewPlot}
+              onRemovePlot={onRemovePlot}
             />
           </div>
           <div className="lg:col-span-5">
