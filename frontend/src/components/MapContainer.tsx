@@ -163,7 +163,7 @@ export function InteractiveMap({
           </div>
           <div className="flex items-center gap-2">
             <span className="size-3 rounded-full bg-[#ef4444]"></span>
-            <span className="text-foreground">Stressed / Disease (< 0.50)</span>
+            <span className="text-foreground">Stressed / Disease (&lt; 0.50)</span>
           </div>
         </div>
       )}
