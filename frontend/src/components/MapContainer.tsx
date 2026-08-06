@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import { Layers, MapPin, Eye, AlertTriangle, CheckCircle, Flame, Search, Plus, Navigation, Trash2 } from "lucide-react";
+import {
+  Layers,
+  MapPin,
+  Eye,
+  AlertTriangle,
+  CheckCircle,
+  Flame,
+  Search,
+  Plus,
+  Navigation,
+  Trash2,
+  MousePointerClick,
+} from "lucide-react";
 
 // Fix standard Leaflet default marker icon path issue in Webpack/Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -164,6 +176,23 @@ function RecenterMap({ center }: { center: [number, number] }) {
   return null;
 }
 
+function MapClickListener({
+  enabled,
+  onMapClick,
+}: {
+  enabled: boolean;
+  onMapClick: (lat: number, lng: number) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      if (enabled) {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
+  return null;
+}
+
 export function InteractiveMap({
   plots,
   selectedPlot,
@@ -174,11 +203,14 @@ export function InteractiveMap({
   onRemovePlot,
 }: MapComponentProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [clickToAddMode, setClickToAddMode] = useState(false);
+  const [clickedCoords, setClickedCoords] = useState<[number, number] | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  
   const [newPlotName, setNewPlotName] = useState("");
   const [newFarmerName, setNewFarmerName] = useState("");
   const [newCropType, setNewCropType] = useState("Cotton");
-  const [newLocationName, setNewLocationName] = useState("Hyderabad, Telangana");
+  const [newLocationName, setNewLocationName] = useState("Selected Map Location");
   const [newLat, setNewLat] = useState("17.3850");
   const [newLon, setNewLon] = useState("78.4867");
 
@@ -194,6 +226,15 @@ export function InteractiveMap({
       default:
         return "#94a3b8";
     }
+  };
+
+  const handleMapClick = (lat: number, lng: number) => {
+    setClickedCoords([lat, lng]);
+    setNewLat(lat.toFixed(4));
+    setNewLon(lng.toFixed(4));
+    setNewLocationName(`Coordinates (${lat.toFixed(3)}, ${lng.toFixed(3)})`);
+    setNewPlotName(`Field @ (${lat.toFixed(3)}, ${lng.toFixed(3)})`);
+    setShowAddModal(true);
   };
 
   const handleLocationSearch = (e: React.FormEvent) => {
@@ -212,24 +253,7 @@ export function InteractiveMap({
     } else {
       const parts = searchQuery.split(",").map((s) => parseFloat(s.trim()));
       if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        const customPlot: FarmPlot = {
-          id: `custom-${Date.now()}`,
-          name: `Custom Location (${parts[0].toFixed(2)}, ${parts[1].toFixed(2)})`,
-          crop_type: "Cotton",
-          farmer: "Local Farmer",
-          location: `Coordinates ${parts[0].toFixed(2)}, ${parts[1].toFixed(2)}`,
-          acreage: 2.0,
-          ndvi_mean: 0.65,
-          health_status: "HEALTHY",
-          center: [parts[0], parts[1]],
-          polygon: [
-            [parts[0] + 0.001, parts[1] - 0.001],
-            [parts[0] + 0.001, parts[1] + 0.001],
-            [parts[0] - 0.001, parts[1] + 0.001],
-            [parts[0] - 0.001, parts[1] - 0.001],
-          ],
-        };
-        onAddNewPlot(customPlot);
+        handleMapClick(parts[0], parts[1]);
       }
     }
   };
@@ -244,7 +268,7 @@ export function InteractiveMap({
       name: newPlotName || "New Custom Field",
       crop_type: newCropType,
       farmer: newFarmerName || "Smallholder Farmer",
-      location: newLocationName || "Telangana Region",
+      location: newLocationName || "Custom Region",
       acreage: 2.5,
       ndvi_mean: 0.66,
       health_status: "HEALTHY",
@@ -259,6 +283,8 @@ export function InteractiveMap({
 
     onAddNewPlot(createdPlot);
     setShowAddModal(false);
+    setClickToAddMode(false);
+    setClickedCoords(null);
     setNewPlotName("");
     setNewFarmerName("");
   };
@@ -287,12 +313,31 @@ export function InteractiveMap({
         </form>
 
         <div className="flex items-center gap-2">
+          {/* Click to Pick Location Button */}
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => setClickToAddMode(!clickToAddMode)}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 font-semibold transition-all shadow-sm ${
+              clickToAddMode
+                ? "bg-amber-500 text-black shadow-lg ring-2 ring-amber-300 animate-pulse"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            }`}
+            title="Click anywhere on the map to add a new farm location"
+          >
+            <MousePointerClick className="size-4" />
+            <span>{clickToAddMode ? "Click Map Location..." : "Click Map to Add"}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setNewLat(selectedPlot.center[0].toFixed(4));
+              setNewLon(selectedPlot.center[1].toFixed(4));
+              setNewLocationName(selectedPlot.location);
+              setShowAddModal(true);
+            }}
             className="flex items-center gap-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 font-semibold transition-colors shadow-sm"
           >
             <Plus className="size-4" />
-            <span>Add Custom Field</span>
+            <span>Add Field</span>
           </button>
 
           <button
@@ -308,6 +353,14 @@ export function InteractiveMap({
           </button>
         </div>
       </div>
+
+      {/* Click-to-add Helper Banner */}
+      {clickToAddMode && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] bg-amber-500 text-black font-extrabold text-xs px-4 py-2 rounded-full shadow-2xl border border-amber-300 flex items-center gap-2">
+          <MapPin className="size-4 animate-bounce" />
+          <span>Click anywhere on the map to select field location!</span>
+        </div>
+      )}
 
       {/* Legend Overlay */}
       {showNdviOverlay && (
@@ -331,7 +384,7 @@ export function InteractiveMap({
       )}
 
       {/* Leaflet Map Renderer */}
-      <div className="flex-1 w-full h-full">
+      <div className={`flex-1 w-full h-full ${clickToAddMode ? "cursor-crosshair" : ""}`}>
         <MapContainer
           center={selectedPlot.center}
           zoom={12}
@@ -339,11 +392,24 @@ export function InteractiveMap({
           className="h-full w-full"
         >
           <RecenterMap center={selectedPlot.center} />
+          <MapClickListener enabled={clickToAddMode} onMapClick={handleMapClick} />
           
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+
+          {/* Render Clicked Point Preview Marker */}
+          {clickedCoords && (
+            <Marker position={clickedCoords}>
+              <Popup>
+                <div className="text-xs p-1">
+                  <strong>Selected Location</strong>
+                  <p>{clickedCoords[0].toFixed(4)}, {clickedCoords[1].toFixed(4)}</p>
+                </div>
+              </Popup>
+            </Marker>
+          )}
 
           {plots.map((plot) => {
             const isSelected = plot.id === selectedPlot.id;
@@ -410,7 +476,7 @@ export function InteractiveMap({
           <div className="bg-soil border border-border rounded-xl p-6 w-full max-w-md space-y-4 shadow-2xl">
             <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
               <Navigation className="size-5 text-primary" />
-              Add Custom Farm Field
+              Add Field at Clicked Location
             </h3>
 
             <form onSubmit={handleCreatePlotSubmit} className="space-y-3 text-xs">
