@@ -2,6 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { InteractiveMap, INITIAL_PLOTS, FarmPlot } from "@/components/MapContainer";
 import { NdviAnalytics } from "@/components/NdviAnalytics";
+import { PmfbyClaimCard } from "@/components/PmfbyClaimCard";
+import { RealTimeAlertsFeed } from "@/components/RealTimeAlertsFeed";
+import { OfficerAggregateView } from "@/components/OfficerAggregateView";
+
 
 import heroField from "@/assets/hero-field.jpg";
 import ear from "@/assets/ear.jpg";
@@ -25,16 +29,18 @@ import {
   PlusCircle,
   X,
   Trash2,
+  ShieldAlert,
+  FileText,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "FasalRakshak 2.0 — AI Precision Agriculture & Early Warning System" },
+      { title: "FasalRakshak 2.0 — PMFBY Crop Loss & Vernacular Early Warning System" },
       {
         name: "description",
         content:
-          "Real-time satellite imagery analysis, predictive disease risk alerts, irrigation optimization, and mandi market recommendations for Indian smallholder farmers.",
+          "Satellite-powered crop damage detection, PMFBY 72-hour claim automation, multi-signal guardrails, and vernacular Telugu WhatsApp alerts for Indian smallholder farmers.",
       },
     ],
   }),
@@ -97,38 +103,38 @@ function Reveal({
 const chapters = [
   { id: "overview", label: "Overview" },
   { id: "map", label: "Satellite Map" },
+  { id: "pmfby", label: "PMFBY 72h Claims" },
   { id: "telemetry", label: "NDVI Telemetry" },
-  { id: "weather", label: "Weather & Risk" },
   { id: "mandi", label: "Market Intelligence" },
 ];
 
 const stats = [
-  { value: "10m", label: "Sentinel-2 Spatial Resolution" },
-  { value: "7-14D", label: "Predictive Disease Forecast" },
-  { value: "30%", label: "Irrigation Water Savings" },
-  { value: "₹5,000", label: "Avg Gain per Hectare" },
+  { value: "72h", label: "PMFBY Mandatory Claim Window" },
+  { value: "2 of 3", label: "Multi-Signal Guardrails Fusion" },
+  { value: "1-Tap", label: "Vernacular WhatsApp Claim Filing" },
+  { value: "100%", label: "Plain-Language Explainability" },
 ];
 
 const traits = [
   {
     n: "01",
-    title: "Sentinel-2 Satellite Ingestion",
-    body: "Multi-spectral 10-meter pixel resolution mapping NIR and Red bands for real-time NDVI crop health assessment across all Indian districts.",
+    title: "Preventive Early Warning Advisories",
+    body: "Lower-tier thresholds triggering Telugu WhatsApp advisories with crop-specific irrigation guidance before damage crosses claimable levels.",
   },
   {
     n: "02",
-    title: "7-14 Day Predictive Disease Rules",
-    body: "Hardcoded agronomic rule engines forecasting Powdery Mildew, Thrips, Leaf Spot, and Blight risks before physical symptoms appear.",
+    title: "Vernacular Multi-Channel Alerts",
+    body: "Delivered in Telugu (తెలుగు) and English via WhatsApp Business, SMS fallback, and outbound voice calls for feature phones.",
   },
   {
     n: "03",
-    title: "Irrigation Water Stress Optimizer",
-    body: "Correlating 7-day NDVI drop trajectory with Open-Meteo dry spells and ISRO Bhuvan soil classifications.",
+    title: "1-Tap PMFBY Claim Submission",
+    body: "Pre-filled evidence reports attached to alerts allowing farmers to approve submission with a single button tap.",
   },
   {
     n: "04",
-    title: "Agmarknet Mandi Price & ROI Engine",
-    body: "Daily agricultural commodity market scraping evaluating immediate sell value against 30-day storage-adjusted forecasts.",
+    title: "Multi-Signal False-Positive Guardrails",
+    body: "Requires agreement from at least 2 of 3 signals (Sentinel-2 NDVI, Open-Meteo Weather, Geotagged Photo) with numeric confidence scoring.",
   },
 ];
 
@@ -184,7 +190,7 @@ function Index() {
   };
 
   const handleRemovePlot = (plotId: string) => {
-    if (plotList.length <= 1) return; // Keep at least one plot
+    if (plotList.length <= 1) return;
     const updated = plotList.filter((p) => p.id !== plotId);
     setPlotList(updated);
 
@@ -216,6 +222,9 @@ function Index() {
         onAddNewPlot={handleAddNewPlot}
         onRemovePlot={handleRemovePlot}
       />
+
+      {/* SRS v2.0 PMFBY 72h Claim & Vernacular Alert Section */}
+      <PmfbySection selectedPlot={selectedPlot} />
 
       {/* AI System Traits / Architecture Section */}
       <TraitsSection />
@@ -303,7 +312,7 @@ function Hero({ y }: { y: number }) {
       <div className="dusk-veil absolute inset-0" />
       <div className="absolute inset-0 bg-soil/45" />
       <div className="relative mx-auto w-full max-w-[1600px] px-6 pb-16 md:px-10 md:pb-24">
-        <p className="eyebrow animate-rise">Precision Agriculture &amp; Early Warning System</p>
+        <p className="eyebrow animate-rise">PMFBY 72h Crop Loss Protection &amp; Vernacular Early Warning</p>
         <h1
           className="animate-rise mt-4 max-w-5xl text-[clamp(3.2rem,11vw,9.5rem)] text-foreground"
           style={{ animationDelay: "120ms" }}
@@ -317,7 +326,7 @@ function Hero({ y }: { y: number }) {
           style={{ animationDelay: "240ms" }}
         >
           <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-            Integrating 10m Sentinel-2 satellite imagery, 7-day predictive disease rule engines, irrigation water stress indicators, and live Agmarknet mandi market analytics across any region in India.
+            Integrating Sentinel-2 satellite imagery, multi-signal false-positive guardrails, vernacular Telugu WhatsApp alerts, and 1-tap automated PMFBY claim submission within 72 hours.
           </p>
           <a
             href="#overview"
@@ -336,11 +345,12 @@ function Hero({ y }: { y: number }) {
 
 function Marquee() {
   const words = [
-    "Sentinel-2 Satellite",
-    "10m Spatial Resolution",
-    "Predictive Disease Alerts",
-    "Irrigation Water Optimizer",
-    "Mandi Sell Timing ROI",
+    "PMFBY 72h Claim Window",
+    "Sentinel-2 10m Resolution",
+    "Telugu WhatsApp Alerts",
+    "1-Tap Claim Approval",
+    "2-of-3 Multi-Signal Guardrails",
+    "Plain-Language Explainability",
   ];
   return (
     <div className="border-y border-border bg-soil py-5">
@@ -375,19 +385,19 @@ function OverviewSection({ y }: { y: number }) {
             smallholders
           </h2>
           <p className="mt-7 max-w-lg text-lg leading-relaxed text-muted-foreground">
-            Indian farmers lose ₹2,000–5,000 per hectare due to late disease detection and waste up to 40% of irrigation water on guesswork.
+            PMFBY insurance rules require crop damage to be reported within 72 hours. Smallholders often miss this deadline due to delayed detection and complex paperwork.
           </p>
           <p className="mt-5 max-w-lg leading-relaxed text-muted-foreground">
-            FasalRakshak 2.0 provides continuous satellite monitoring and early warning alerts, putting multi-spectral crop diagnostic intelligence into every farmer's hands.
+            FasalRakshak 2.0 solves this with automated multi-signal detection, pre-filled evidence PDF generation, and 1-tap claim approval delivered in Telugu on WhatsApp.
           </p>
           <dl className="mt-10 grid grid-cols-2 gap-6 border-t border-border pt-8">
             <div>
-              <dt className="eyebrow">Forecast Lead Time</dt>
-              <dd className="display mt-2 text-4xl text-foreground">7–14 Days</dd>
+              <dt className="eyebrow">PMFBY Mandate Window</dt>
+              <dd className="display mt-2 text-4xl text-foreground">72 Hours</dd>
             </div>
             <div>
-              <dt className="eyebrow">Water Savings Target</dt>
-              <dd className="display mt-2 text-4xl text-foreground">25–30%</dd>
+              <dt className="eyebrow">Guardrails Confidence</dt>
+              <dd className="display mt-2 text-4xl text-foreground">2 of 3 Signals</dd>
             </div>
           </dl>
         </Reveal>
@@ -460,7 +470,7 @@ function DashboardSection({
                 Interactive Satellite &amp; Telemetry Map
               </h2>
               <p className="text-sm text-muted-foreground mt-2">
-                Select from regional presets, search any district in India, or add/remove custom fields.
+                Select from regional presets, search any district in India, or click directly on the map to add/remove custom fields.
               </p>
             </div>
 
@@ -564,6 +574,38 @@ function DashboardSection({
   );
 }
 
+function PmfbySection({ selectedPlot }: { selectedPlot: FarmPlot }) {
+  return (
+    <section id="pmfby" className="py-28 md:py-36 border-b border-border bg-soil/60">
+      <div className="mx-auto max-w-[1600px] px-6 md:px-10 space-y-10">
+        <Reveal>
+          <div>
+            <p className="eyebrow">Chapter three — SRS v2.0 PMFBY Automation</p>
+            <h2 className="mt-4 text-[clamp(2.4rem,6vw,5rem)]">
+              PMFBY 72h Claims &amp; Vernacular WhatsApp Alerts
+            </h2>
+            <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
+              Combining two-tier advisories, multi-signal false-positive guardrails, plain-language explainability, and 1-tap WhatsApp claim approval.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={100}>
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+            <div className="xl:col-span-6">
+              <PmfbyClaimCard plot={selectedPlot} />
+            </div>
+            <div className="xl:col-span-6 space-y-8">
+              <OfficerAggregateView />
+              <RealTimeAlertsFeed />
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 function TraitsSection() {
   return (
     <section className="py-28 md:py-40">
@@ -571,7 +613,7 @@ function TraitsSection() {
         <Reveal>
           <p className="eyebrow">Core System Architecture</p>
           <h2 className="mt-5 max-w-3xl text-[clamp(2.4rem,6vw,5rem)]">
-            Four Pillars of FasalRakshak
+            Four Pillars of FasalRakshak v2.0
           </h2>
         </Reveal>
         <div className="mt-16 grid gap-px border-t border-border md:grid-cols-2">
@@ -611,7 +653,7 @@ function YieldSection({ y, selectedPlot }: { y: number; selectedPlot: FarmPlot }
           </div>
         </Reveal>
         <Reveal delay={120} className="order-1 md:order-2 space-y-6">
-          <p className="eyebrow">Chapter three — Early Warning &amp; Yield</p>
+          <p className="eyebrow">Chapter four — Early Warning &amp; Yield</p>
           <h2 className="text-[clamp(2.6rem,6vw,5.5rem)]">
             Predictive Disease Risk &amp; Yield Model
           </h2>
@@ -661,7 +703,7 @@ function MandiSection() {
     <section id="mandi" className="py-28 md:py-36 border-t border-border">
       <div className="mx-auto max-w-[1600px] px-6 md:px-10 space-y-12">
         <Reveal>
-          <p className="eyebrow">Chapter four — Market Integration</p>
+          <p className="eyebrow">Chapter five — Market Integration</p>
           <h2 className="mt-4 text-[clamp(2.4rem,6vw,5rem)]">
             Agmarknet Mandi Price &amp; Sell ROI Engine
           </h2>
@@ -707,7 +749,7 @@ function Footer() {
           FasalRakshak<span className="text-primary">.</span>
         </p>
         <p className="max-w-md text-xs leading-relaxed text-muted-foreground">
-          FasalRakshak 2.0 AI Precision Agriculture System for Indian Smallholder Farmers. Integrating Sentinel-2, Open-Meteo, and Agmarknet open data standards.
+          FasalRakshak 2.0 AI Precision Agriculture &amp; PMFBY Claim Automation System for Indian Smallholder Farmers. Integrating Sentinel-2, Open-Meteo, and Agmarknet open data standards.
         </p>
       </div>
     </footer>
