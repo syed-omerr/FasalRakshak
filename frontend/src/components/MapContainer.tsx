@@ -84,6 +84,17 @@ export function InteractiveMap({
   const [newLat, setNewLat] = useState("17.3850");
   const [newLon, setNewLon] = useState("78.4867");
 
+  useEffect(() => {
+    return () => {
+      // Clear leaflet instance cache on unmount to completely resolve "Map container already initialized"
+      const container = document.getElementById("leaflet-map-container");
+      if (container) {
+        (container as any)._leaflet_id = null;
+        container.innerHTML = "";
+      }
+    };
+  }, []);
+
   const getPolygonColor = (status: string) => {
     if (!showNdviOverlay) return "#3b82f6";
     switch (status) {
@@ -269,7 +280,7 @@ export function InteractiveMap({
       )}
 
       {/* Leaflet Map Renderer */}
-      <div className={`flex-1 w-full h-full ${clickToAddMode ? "cursor-crosshair" : ""}`}>
+      <div id="leaflet-map-container" className={`flex-1 w-full h-full ${clickToAddMode ? "cursor-crosshair" : ""}`}>
         <MapContainer
           key={selectedPlot.id}
           center={selectedPlot.center}
