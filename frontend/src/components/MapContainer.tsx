@@ -13,6 +13,8 @@ import {
   Navigation,
   Trash2,
   MousePointerClick,
+  ExternalLink,
+  Globe2,
 } from "lucide-react";
 
 // Fix standard Leaflet default marker icon path issue in Webpack/Vite
@@ -203,6 +205,7 @@ export function InteractiveMap({
   onRemovePlot,
 }: MapComponentProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [mapMode, setMapMode] = useState<"SATELLITE" | "STREET">("SATELLITE");
   const [clickToAddMode, setClickToAddMode] = useState(false);
   const [clickedCoords, setClickedCoords] = useState<[number, number] | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -289,11 +292,18 @@ export function InteractiveMap({
     setNewFarmerName("");
   };
 
+  // Open Sentinel Hub / EO Browser directly for this plot
+  const openCopernicusSentinelHub = () => {
+    const [lat, lon] = selectedPlot.center;
+    const url = `https://browser.dataspace.copernicus.eu/?zoom=14&lat=${lat}&lng=${lon}&themeId=DEFAULT-THEME&visualizationUrl=https%3A%2F%2Fsh.dataspace.copernicus.eu%2Fogc%2Fwms%2Fa6b5d038-04f8-45ee-bcfa-17181048b26e&datasetId=S2_L2A_CDAS&fromTime=2026-07-01T00%3A00%3A00.000Z&toTime=2026-08-06T23%3A59%3A59.999Z&layerId=1_TRUE_COLOR`;
+    window.open(url, "_blank");
+  };
+
   return (
-    <div className="relative h-[520px] w-full overflow-hidden rounded-xl border border-border shadow-2xl bg-card flex flex-col">
+    <div className="relative h-[540px] w-full overflow-hidden rounded-xl border border-border shadow-2xl bg-card flex flex-col">
       {/* Top Search & Controls Bar Overlay */}
       <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-wrap items-center justify-between gap-3 bg-soil/95 backdrop-blur-md p-2.5 rounded-lg border border-border/80 shadow-lg text-xs">
-        <form onSubmit={handleLocationSearch} className="flex items-center gap-2 flex-1 max-w-md">
+        <form onSubmit={handleLocationSearch} className="flex items-center gap-2 flex-1 max-w-sm">
           <div className="relative w-full">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <input
@@ -312,7 +322,17 @@ export function InteractiveMap({
           </button>
         </form>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Map Layer Switcher: Satellite vs Street */}
+          <button
+            onClick={() => setMapMode(mapMode === "SATELLITE" ? "STREET" : "SATELLITE")}
+            className="flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors"
+            title="Toggle between High-Res Satellite Imagery & Street Map"
+          >
+            <Globe2 className="size-4 text-primary" />
+            <span>{mapMode === "SATELLITE" ? "Imagery: Satellite" : "Imagery: Street"}</span>
+          </button>
+
           {/* Click to Pick Location Button */}
           <button
             onClick={() => setClickToAddMode(!clickToAddMode)}
@@ -324,20 +344,7 @@ export function InteractiveMap({
             title="Click anywhere on the map to add a new farm location"
           >
             <MousePointerClick className="size-4" />
-            <span>{clickToAddMode ? "Click Map Location..." : "Click Map to Add"}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setNewLat(selectedPlot.center[0].toFixed(4));
-              setNewLon(selectedPlot.center[1].toFixed(4));
-              setNewLocationName(selectedPlot.location);
-              setShowAddModal(true);
-            }}
-            className="flex items-center gap-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 font-semibold transition-colors shadow-sm"
-          >
-            <Plus className="size-4" />
-            <span>Add Field</span>
+            <span>{clickToAddMode ? "Click Map..." : "Click to Add"}</span>
           </button>
 
           <button
@@ -349,7 +356,17 @@ export function InteractiveMap({
             }`}
           >
             <Flame className="size-4" />
-            <span>{showNdviOverlay ? "Heatmap: ON" : "Heatmap: OFF"}</span>
+            <span>{showNdviOverlay ? "NDVI Spectrum: ON" : "NDVI Spectrum: OFF"}</span>
+          </button>
+
+          {/* Copernicus External Sentinel Hub Link Button */}
+          <button
+            onClick={openCopernicusSentinelHub}
+            className="flex items-center gap-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 font-semibold transition-colors shadow-sm"
+            title="View Live Sentinel-2 Satellite Pass on Copernicus Dataspace"
+          >
+            <ExternalLink className="size-3.5" />
+            <span>Sentinel Hub</span>
           </button>
         </div>
       </div>
@@ -365,16 +382,17 @@ export function InteractiveMap({
       {/* Legend Overlay */}
       {showNdviOverlay && (
         <div className="absolute bottom-4 left-4 z-[1000] rounded-lg bg-soil/90 backdrop-blur-md p-3 border border-border/80 text-[0.7rem] space-y-1.5 shadow-lg">
-          <div className="font-semibold text-muted-foreground uppercase tracking-wider text-[0.65rem] mb-1">
-            Sentinel-2 NDVI Spectrum
+          <div className="font-semibold text-muted-foreground uppercase tracking-wider text-[0.65rem] mb-1 flex items-center justify-between">
+            <span>Sentinel-2 (B8 NIR / B4 Red)</span>
+            <span className="text-primary font-bold">10m Pixel</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="size-3 rounded-full bg-[#22c55e]"></span>
-            <span className="text-foreground">Healthy (0.65 - 0.90)</span>
+            <span className="text-foreground">Healthy Canopy (0.65 - 0.90)</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="size-3 rounded-full bg-[#eab308]"></span>
-            <span className="text-foreground">Moderate (0.50 - 0.64)</span>
+            <span className="text-foreground">Moderate Health (0.50 - 0.64)</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="size-3 rounded-full bg-[#ef4444]"></span>
@@ -387,17 +405,25 @@ export function InteractiveMap({
       <div className={`flex-1 w-full h-full ${clickToAddMode ? "cursor-crosshair" : ""}`}>
         <MapContainer
           center={selectedPlot.center}
-          zoom={12}
+          zoom={13}
           scrollWheelZoom={false}
           className="h-full w-full"
         >
           <RecenterMap center={selectedPlot.center} />
           <MapClickListener enabled={clickToAddMode} onMapClick={handleMapClick} />
           
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          {/* Map Layer: High-Res Esri World Satellite Imagery vs Street Map */}
+          {mapMode === "SATELLITE" ? (
+            <TileLayer
+              attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            />
+          ) : (
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          )}
 
           {/* Render Clicked Point Preview Marker */}
           {clickedCoords && (
@@ -461,6 +487,13 @@ export function InteractiveMap({
                           {plot.ndvi_mean}
                         </span>
                       </div>
+                      <button
+                        onClick={openCopernicusSentinelHub}
+                        className="w-full mt-1 py-1 px-2 text-[0.7rem] font-semibold rounded bg-blue-600/20 text-blue-300 border border-blue-500/30 flex items-center justify-center gap-1 hover:bg-blue-600/30"
+                      >
+                        <ExternalLink className="size-3" />
+                        <span>View Raw Sentinel-2 Bands (Copernicus)</span>
+                      </button>
                     </div>
                   </Popup>
                 </Marker>
