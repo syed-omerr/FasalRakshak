@@ -84,15 +84,14 @@ export function InteractiveMap({
   const [newLat, setNewLat] = useState("17.3850");
   const [newLon, setNewLon] = useState("78.4867");
 
+
+
+  const [mapKey, setMapKey] = useState(0);
+
   useEffect(() => {
-    return () => {
-      // Clear leaflet instance cache on unmount to completely resolve "Map container already initialized"
-      const container = document.getElementById("leaflet-map-container");
-      if (container) {
-        (container as any)._leaflet_id = null;
-        container.innerHTML = "";
-      }
-    };
+    // Increment mapKey on client mount to force React to recreate the map element
+    // and prevent Leaflet from reusing a dirty DOM node from SSR or StrictMode double mount.
+    setMapKey((prev) => prev + 1);
   }, []);
 
   const getPolygonColor = (status: string) => {
@@ -280,9 +279,21 @@ export function InteractiveMap({
       )}
 
       {/* Leaflet Map Renderer */}
-      <div id="leaflet-map-container" className={`flex-1 w-full h-full ${clickToAddMode ? "cursor-crosshair" : ""}`}>
+      <div 
+        ref={(el) => {
+          if (el) {
+            delete (el as any)._leaflet_id;
+            el.querySelectorAll("*").forEach((node) => {
+              delete (node as any)._leaflet_id;
+            });
+          }
+        }}
+        key={`${selectedPlot.id}-${mapKey}`}
+        id="leaflet-map-container" 
+        className={`flex-1 w-full h-full ${clickToAddMode ? "cursor-crosshair" : ""}`}
+      >
         <MapContainer
-          key={selectedPlot.id}
+          key={`${selectedPlot.id}-${mapKey}`}
           center={selectedPlot.center}
           zoom={13}
           scrollWheelZoom={false}
