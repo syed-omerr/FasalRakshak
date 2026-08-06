@@ -153,7 +153,7 @@ function Index() {
   const [showNdviOverlay, setShowNdviOverlay] = useState<boolean>(true);
   const [weatherList, setWeatherList] = useState<WeatherData[]>([]);
   const [language, setLanguage] = useState<"EN" | "HI" | "TE">("EN");
-  const [activeTab, setActiveTab] = useState<"satellite" | "pmfby" | "mandi" | "onboarding">("satellite");
+  const [activeTab, setActiveTab] = useState<"satellite" | "pmfby" | "mandi" | "onboarding">("onboarding");
 
   useEffect(() => {
     async function loadWeather() {
@@ -326,34 +326,36 @@ function Hero({ y }: { y: number }) {
   return (
     <section
       id="top"
-      className="grain relative flex h-[100svh] min-h-[640px] items-end overflow-hidden"
+      className="grain relative flex h-[100svh] min-h-[620px] items-end overflow-hidden"
     >
       <img
         src={heroField}
-        alt="Indian agricultural crop fields lit by dawn light"
+        alt="Corn stalks at night lit from below by warm light"
         width={1920}
         height={1200}
         className="absolute inset-0 h-[118%] w-full object-cover"
         style={{ transform: `translateY(${y * -0.18}px) scale(1.04)` }}
       />
       <div className="dusk-veil absolute inset-0" />
-      <div className="absolute inset-0 bg-soil/45" />
+      <div className="absolute inset-0 bg-soil/35" />
       <div className="relative mx-auto w-full max-w-[1600px] px-6 pb-16 md:px-10 md:pb-24">
-        <p className="eyebrow animate-rise">PMFBY 72h Crop Loss Protection &amp; Vernacular Early Warning</p>
+        <p className="eyebrow animate-rise">Chapter zero — a single kernel</p>
         <h1
-          className="animate-rise mt-4 max-w-5xl text-[clamp(3.2rem,11vw,9.5rem)] text-foreground"
+          className="animate-rise mt-4 max-w-5xl text-[clamp(3.4rem,12vw,11rem)] text-foreground"
           style={{ animationDelay: "120ms" }}
         >
-          Protecting the
+          The corn
           <br />
-          smallholder field
+          revolution
         </h1>
         <div
           className="animate-rise mt-8 flex flex-col gap-8 border-t border-border pt-8 md:flex-row md:items-end md:justify-between"
           style={{ animationDelay: "240ms" }}
         >
           <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-            Integrating Sentinel-2 satellite imagery, multi-signal false-positive guardrails, vernacular Telugu WhatsApp alerts, and 1-tap automated PMFBY claim submission within 72 hours.
+            Every kernel is a hundred years of decisions compressed into something
+            you can hold between two fingers. This is how it changed the ground
+            beneath us.
           </p>
           <a
             href="#overview"
@@ -362,7 +364,7 @@ function Hero({ y }: { y: number }) {
             <span className="grid size-11 place-items-center rounded-full border border-primary/60 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
               ↓
             </span>
-            Explore System Architecture
+            Begin the descent
           </a>
         </div>
       </div>

@@ -205,7 +205,7 @@ export function InteractiveMap({
   onRemovePlot,
 }: MapComponentProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [mapMode, setMapMode] = useState<"SATELLITE" | "STREET">("SATELLITE");
+  const [mapMode, setMapMode] = useState<"SATELLITE" | "STREET">("STREET");
   const [clickToAddMode, setClickToAddMode] = useState(false);
   const [clickedCoords, setClickedCoords] = useState<[number, number] | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
