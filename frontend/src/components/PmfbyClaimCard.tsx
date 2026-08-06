@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FarmPlot } from "./MapContainer";
+import { FarmPlot } from "../lib/plots";
 import {
   FileCheck,
   Send,

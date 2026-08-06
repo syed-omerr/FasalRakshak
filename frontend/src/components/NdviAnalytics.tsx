@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Activity, ShieldAlert, Sparkles, TrendingUp, Calendar } from "lucide-react";
-import { FarmPlot } from "./MapContainer";
+import { FarmPlot } from "../lib/plots";
 
 interface NdviAnalyticsProps {
   plot: FarmPlot;
