@@ -6,6 +6,7 @@ import { PmfbyClaimCard } from "@/components/PmfbyClaimCard";
 import { RealTimeAlertsFeed, AlertLogItem } from "@/components/RealTimeAlertsFeed";
 import { OfficerAggregateView } from "@/components/OfficerAggregateView";
 import { KisanFarmerView } from "@/components/KisanFarmerView";
+import { LoginView } from "@/components/LoginView";
 
 
 
@@ -150,6 +151,16 @@ interface WeatherData {
 
 function Index() {
   const y = useScrollY();
+  const [authSession, setAuthSession] = useState<{
+    role: "kisan" | "enterprise";
+    name: string;
+    phone?: string;
+    village?: string;
+    email?: string;
+    district?: string;
+    crop?: string;
+  } | null>(null);
+
   const [productView, setProductView] = useState<"kisan" | "enterprise">("enterprise");
   const [plotList, setPlotList] = useState<FarmPlot[]>(INITIAL_PLOTS);
   const [selectedPlot, setSelectedPlot] = useState<FarmPlot>(INITIAL_PLOTS[0]);
@@ -322,6 +333,46 @@ function Index() {
     );
   };
 
+  const handleLoginSuccess = (session: any) => {
+    setAuthSession(session);
+    setProductView(session.role);
+    
+    if (session.role === "kisan") {
+      const plotId = `plot-session-${Date.now()}`;
+      const name = session.name;
+      const village = session.village || "Warangal";
+      const crop = session.crop || "Cotton";
+      
+      const newPlot: FarmPlot = {
+        id: plotId,
+        name: `${name}'s ${crop} Field`,
+        crop_type: crop,
+        farmer: name,
+        location: `${village}, Telangana`,
+        acreage: 2.2,
+        ndvi_mean: 0.72,
+        health_status: "HEALTHY",
+        center: [17.9784, 79.5941],
+        polygon: [
+          [17.9796, 79.5926],
+          [17.9802, 79.5956],
+          [17.9772, 79.5959],
+          [17.9766, 79.5929],
+        ]
+      };
+      
+      setPlotList((prev) => {
+        if (prev.some((p) => p.farmer === name)) return prev;
+        return [newPlot, ...prev];
+      });
+      setSelectedPlot(newPlot);
+    }
+  };
+
+  if (!authSession) {
+    return <LoginView onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <main className="overflow-x-hidden bg-background text-foreground min-h-screen flex flex-col">
       <Nav 
@@ -331,6 +382,7 @@ function Index() {
         setActiveTab={setActiveTab} 
         productView={productView}
         setProductView={setProductView}
+        onLogout={() => setAuthSession(null)}
       />
       
       <div className="flex-1 pt-12">
@@ -408,7 +460,8 @@ function Nav({
   activeTab,
   setActiveTab,
   productView,
-  setProductView
+  setProductView,
+  onLogout
 }: {
   language: "EN" | "HI" | "TE";
   setLanguage: (lang: "EN" | "HI" | "TE") => void;
@@ -416,6 +469,7 @@ function Nav({
   setActiveTab: (tab: "satellite" | "pmfby" | "mandi" | "onboarding") => void;
   productView: "kisan" | "enterprise";
   setProductView: (view: "kisan" | "enterprise") => void;
+  onLogout: () => void;
 }) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-soil/80 backdrop-blur-md border-b border-border/60">
@@ -501,6 +555,14 @@ function Nav({
               Launch Map
             </button>
           )}
+
+          {/* Sign Out Button */}
+          <button
+            onClick={onLogout}
+            className="rounded-full bg-soil/60 hover:bg-rose-500/10 border border-border hover:border-rose-500/30 px-3.5 py-1.5 text-xs text-muted-foreground hover:text-rose-400 font-bold transition-all cursor-pointer"
+          >
+            Sign Out
+          </button>
         </div>
       </div>
     </header>
