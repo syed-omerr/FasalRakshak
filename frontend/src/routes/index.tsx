@@ -591,7 +591,7 @@ function Hero({ y }: { y: number }) {
           className="animate-rise mt-4 max-w-5xl text-[clamp(3.4rem,12vw,11rem)] text-foreground"
           style={{ animationDelay: "120ms" }}
         >
-          The corn
+          The farm
           <br />
           revolution
         </h1>
