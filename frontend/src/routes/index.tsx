@@ -552,23 +552,6 @@ function Nav({
             </button>
           </div>
 
-          <div className="flex items-center gap-1 rounded-full border border-border bg-card p-1 text-xs">
-            <Globe className="size-3 text-muted-foreground ml-1.5" />
-            {(["EN", "HI", "TE"] as const).map((lang) => (
-              <button
-                key={lang}
-                onClick={() => setLanguage(lang)}
-                className={`rounded-full px-2.5 py-0.5 font-semibold transition-colors cursor-pointer ${
-                  language === lang
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {lang === "EN" ? "EN" : lang === "HI" ? "हिंदी" : "తెలుగు"}
-              </button>
-            ))}
-          </div>
-
           {productView === "enterprise" && (
             <button
               onClick={() => setActiveTab("satellite")}
