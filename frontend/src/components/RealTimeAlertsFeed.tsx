@@ -47,6 +47,62 @@ export function RealTimeAlertsFeed({
   const [simulatingId, setSimulatingId] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
+  // Custom WhatsApp & SMS Dispatch Modal state
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
+  const [targetPhone, setTargetPhone] = useState("+919848022339");
+  const [targetPlotId, setTargetPlotId] = useState("plot-102");
+  const [targetCrop, setTargetCrop] = useState("Groundnut");
+  const [targetChannel, setTargetChannel] = useState<"WHATSAPP" | "SMS" | "BOTH">("BOTH");
+  const [targetLanguage, setTargetLanguage] = useState<"TE" | "HI" | "EN">("TE");
+  const [targetTier, setTargetTier] = useState<"PREVENTIVE_ADVISORY" | "PMFBY_CLAIM_ALERT">("PMFBY_CLAIM_ALERT");
+  const [customMsg, setCustomMsg] = useState("");
+  const [sendingAlert, setSendingAlert] = useState(false);
+  const [dispatchStatus, setDispatchStatus] = useState<string | null>(null);
+
+  const handleSendCustomAlert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSendingAlert(true);
+    setDispatchStatus(null);
+
+    try {
+      const res = await fetch("http://localhost:8000/api/notifications/send-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: targetPhone,
+          plot_id: targetPlotId,
+          crop_type: targetCrop,
+          tier: targetTier,
+          language: targetLanguage,
+          channel: targetChannel,
+          custom_message: customMsg.trim() || undefined
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+
+      const data = await res.json();
+      const sidInfo = data.dispatched_channels?.whatsapp?.sid || data.dispatched_channels?.sms?.sid || "MOCK-DELIVERED";
+      setDispatchStatus(`✅ Alert dispatched via ${targetChannel}! SID: ${sidInfo}`);
+
+      if (data.alerts_feed_record) {
+        setAlerts((prev) => [data.alerts_feed_record, ...prev]);
+      }
+
+      setTimeout(() => {
+        setShowDispatchModal(false);
+        setDispatchStatus(null);
+      }, 2000);
+
+    } catch (err: any) {
+      setDispatchStatus(`❌ Delivery Error: ${err.message}`);
+    } finally {
+      setSendingAlert(false);
+    }
+  };
+
   const getFallbackAlerts = (): AlertLogItem[] => [
     {
       id: "alert-901",
@@ -178,7 +234,7 @@ export function RealTimeAlertsFeed({
       if (!res.ok) throw new Error("Webhook simulation failed");
       await fetchAlerts();
     } catch (err: any) {
-      alert("Failed to simulate WhatsApp response: " + err.message);
+      window.alert("Failed to simulate WhatsApp response: " + err.message);
     } finally {
       setSimulatingId(null);
     }
@@ -204,18 +260,150 @@ export function RealTimeAlertsFeed({
             <p className="text-xs text-muted-foreground">Alerts sent to farmers via WhatsApp, SMS, &amp; Voice</p>
           </div>
         </div>
-        {!sharedAlerts && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={fetchAlerts}
-            disabled={loading}
-            className="rounded-full px-3 py-1.5 border border-border bg-card/85 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 text-xs hover:border-primary/50 cursor-pointer"
-            title="Manual refresh"
+            type="button"
+            onClick={() => setShowDispatchModal(true)}
+            className="rounded-xl px-3.5 py-1.5 bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary font-bold transition-all flex items-center gap-1.5 text-xs cursor-pointer shadow-sm"
           >
-            <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            Refresh
+            <Send className="size-3.5" />
+            Dispatch WhatsApp &amp; SMS
           </button>
-        )}
+          {!sharedAlerts && (
+            <button
+              onClick={fetchAlerts}
+              disabled={loading}
+              className="rounded-full px-3 py-1.5 border border-border bg-card/85 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 text-xs hover:border-primary/50 cursor-pointer"
+              title="Manual refresh"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              Refresh
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* WhatsApp & SMS Dispatch Modal */}
+      {showDispatchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-card border border-primary/40 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4 relative">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Send className="size-4 text-primary" /> Dispatch Live WhatsApp &amp; SMS Alert
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowDispatchModal(false)}
+                className="text-muted-foreground hover:text-foreground font-bold text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSendCustomAlert} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Farmer Phone Number</label>
+                  <input
+                    type="text"
+                    required
+                    value={targetPhone}
+                    onChange={(e) => setTargetPhone(e.target.value)}
+                    placeholder="+91 98480 22339"
+                    className="w-full bg-soil border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Plot ID</label>
+                  <input
+                    type="text"
+                    required
+                    value={targetPlotId}
+                    onChange={(e) => setTargetPlotId(e.target.value)}
+                    placeholder="plot-102"
+                    className="w-full bg-soil border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Channel</label>
+                  <select
+                    value={targetChannel}
+                    onChange={(e) => setTargetChannel(e.target.value as any)}
+                    className="w-full bg-soil border border-border rounded-xl px-2.5 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="BOTH">WhatsApp + SMS</option>
+                    <option value="WHATSAPP">WhatsApp Only</option>
+                    <option value="SMS">SMS Only</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Language</label>
+                  <select
+                    value={targetLanguage}
+                    onChange={(e) => setTargetLanguage(e.target.value as any)}
+                    className="w-full bg-soil border border-border rounded-xl px-2.5 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="TE">🌾 తెలుగు</option>
+                    <option value="HI">🇮🇳 हिंदी</option>
+                    <option value="EN">🇬🇧 English</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Alert Tier</label>
+                  <select
+                    value={targetTier}
+                    onChange={(e) => setTargetTier(e.target.value as any)}
+                    className="w-full bg-soil border border-border rounded-xl px-2.5 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="PMFBY_CLAIM_ALERT">72-Hr PMFBY Claim</option>
+                    <option value="PREVENTIVE_ADVISORY">Preventive Advisory</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-muted-foreground font-bold mb-1">Custom Alert Message (Optional)</label>
+                <textarea
+                  rows={3}
+                  value={customMsg}
+                  onChange={(e) => setCustomMsg(e.target.value)}
+                  placeholder="Leave blank to automatically format vernacular template message..."
+                  className="w-full bg-soil border border-border rounded-xl p-3 text-xs text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              {dispatchStatus && (
+                <div className="p-3 rounded-xl bg-primary/10 border border-primary/30 text-xs font-semibold text-primary">
+                  {dispatchStatus}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDispatchModal(false)}
+                  className="px-4 py-2 rounded-xl bg-secondary text-secondary-foreground font-bold hover:bg-secondary/80 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingAlert}
+                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  {sendingAlert ? "Dispatching..." : "Send Alert Now"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* List */}
       <div className="space-y-4 max-h-[520px] overflow-y-auto pr-1">
@@ -244,14 +432,22 @@ export function RealTimeAlertsFeed({
                   <span
                     className={`inline-block rounded px-2 py-0.5 text-[0.65rem] font-bold ${
                       isAdvisory
-                        ? "bg-amber-500/25 text-amber-400 border border-amber-500/30"
+                        ? "bg-cyan-500/25 text-cyan-300 border border-cyan-500/30"
                         : isSubmitted
                         ? "bg-emerald-500/25 text-emerald-400 border border-emerald-500/30"
                         : "bg-rose-500/25 text-rose-400 border border-rose-500/30"
                     }`}
                   >
-                    {isAdvisory ? "Tier 1: Early Advisory" : "Tier 2: Crop Loss Claim Alert"}
+                    {isAdvisory ? "Tier 1: SWI Soil-Moisture Advisory" : "Tier 2: 3-Source Claim Alert"}
                   </span>
+
+                  {/* SRS v4 3-Source Eligibility Status Badge */}
+                  <span className={`ml-2 inline-block rounded px-2 py-0.5 text-[0.62rem] font-bold ${
+                    !isAdvisory ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-soil/60 text-muted-foreground border border-border"
+                  }`}>
+                    Eligibility: {!isAdvisory ? "Applicable (2+ Sources)" : "Advisory Warning"}
+                  </span>
+
                   <span className="text-[0.68rem] text-muted-foreground ml-2.5 font-semibold">
                     {item.farmer_name} • {item.crop_type}
                   </span>

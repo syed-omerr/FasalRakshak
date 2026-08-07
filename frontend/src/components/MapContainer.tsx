@@ -15,6 +15,7 @@ import {
   MousePointerClick,
   ExternalLink,
   Globe2,
+  Droplets,
 } from "lucide-react";
 
 // Fix standard Leaflet default marker icon path issue in Webpack/Vite
@@ -94,7 +95,10 @@ export function InteractiveMap({
     setMapKey((prev) => prev + 1);
   }, []);
 
+  const [showSwiOverlay, setShowSwiOverlay] = useState(false);
+
   const getPolygonColor = (status: string) => {
+    if (showSwiOverlay) return "#06b6d4"; // Cyan for Soil Water Index layer
     if (!showNdviOverlay) return "#3b82f6";
     switch (status) {
       case "HEALTHY":
@@ -234,6 +238,20 @@ export function InteractiveMap({
           >
             <Flame className="size-4" />
             <span>{showNdviOverlay ? "NDVI Spectrum: ON" : "NDVI Spectrum: OFF"}</span>
+          </button>
+
+          {/* SRS v4 Soil Water Index (SWI) Layer Button */}
+          <button
+            onClick={() => setShowSwiOverlay(!showSwiOverlay)}
+            className={`flex items-center gap-2 rounded-md px-3 py-1.5 font-medium transition-all ${
+              showSwiOverlay
+                ? "bg-cyan-500 text-black font-bold shadow-md"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            }`}
+            title="Toggle Soil Water Index (SWI) radar soil moisture layer"
+          >
+            <Droplets className="size-4 text-cyan-400" />
+            <span>{showSwiOverlay ? "SWI Layer: ON" : "SWI Layer: OFF"}</span>
           </button>
 
           {/* Copernicus External Sentinel Hub Link Button */}

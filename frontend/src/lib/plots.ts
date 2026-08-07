@@ -6,6 +6,8 @@ export interface FarmPlot {
   location: string;
   acreage: number;
   ndvi_mean: number;
+  swi_mean?: number; // Soil Water Index (0.00 - 1.00)
+  swi_trend_7d?: number; // 7-day moving trend
   health_status: "HEALTHY" | "MODERATE" | "STRESSED" | "CRITICAL";
   center: [number, number];
   polygon: [number, number][];
@@ -20,6 +22,8 @@ export const INITIAL_PLOTS: FarmPlot[] = [
     location: "Warangal, Telangana",
     acreage: 2.4,
     ndvi_mean: 0.68,
+    swi_mean: 0.65,
+    swi_trend_7d: 0.01,
     health_status: "HEALTHY",
     center: [17.9784, 79.5941],
     polygon: [
@@ -37,6 +41,8 @@ export const INITIAL_PLOTS: FarmPlot[] = [
     location: "Nalgonda, Telangana",
     acreage: 1.8,
     ndvi_mean: 0.52,
+    swi_mean: 0.38,
+    swi_trend_7d: -0.12,
     health_status: "MODERATE",
     center: [17.0500, 79.2700],
     polygon: [
@@ -54,6 +60,8 @@ export const INITIAL_PLOTS: FarmPlot[] = [
     location: "Karimnagar, Telangana",
     acreage: 3.1,
     ndvi_mean: 0.38,
+    swi_mean: 0.42,
+    swi_trend_7d: -0.06,
     health_status: "STRESSED",
     center: [18.4386, 79.1288],
     polygon: [
@@ -71,6 +79,8 @@ export const INITIAL_PLOTS: FarmPlot[] = [
     location: "Suryapet, Telangana",
     acreage: 1.2,
     ndvi_mean: 0.74,
+    swi_mean: 0.72,
+    swi_trend_7d: 0.03,
     health_status: "HEALTHY",
     center: [17.1400, 79.6200],
     polygon: [
@@ -88,6 +98,8 @@ export const INITIAL_PLOTS: FarmPlot[] = [
     location: "Khammam, Telangana",
     acreage: 2.9,
     ndvi_mean: 0.71,
+    swi_mean: 0.69,
+    swi_trend_7d: 0.00,
     health_status: "HEALTHY",
     center: [17.2473, 80.1514],
     polygon: [
@@ -105,6 +117,8 @@ export const INITIAL_PLOTS: FarmPlot[] = [
     location: "Nizamabad, Telangana",
     acreage: 3.5,
     ndvi_mean: 0.63,
+    swi_mean: 0.58,
+    swi_trend_7d: -0.03,
     health_status: "MODERATE",
     center: [18.6725, 78.0941],
     polygon: [
@@ -122,6 +136,8 @@ export const INITIAL_PLOTS: FarmPlot[] = [
     location: "Guntur, Andhra Pradesh",
     acreage: 4.2,
     ndvi_mean: 0.78,
+    swi_mean: 0.76,
+    swi_trend_7d: 0.04,
     health_status: "HEALTHY",
     center: [16.3067, 80.4365],
     polygon: [

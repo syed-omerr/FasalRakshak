@@ -4,6 +4,8 @@ from app.api.weather_routes import router as weather_router
 from app.api.ndvi_routes import router as ndvi_router
 from app.api.pmfby_routes import router as pmfby_router
 from app.api.claims_routes import router as claims_router
+from app.api.notifications_routes import router as notifications_router
+from app.api.assistant_routes import router as assistant_router
 from fastapi.staticfiles import StaticFiles
 import os
 
@@ -31,6 +33,8 @@ app.include_router(weather_router)
 app.include_router(ndvi_router)
 app.include_router(pmfby_router)
 app.include_router(claims_router)
+app.include_router(notifications_router)
+app.include_router(assistant_router)
 
 
 @app.get("/api/health")

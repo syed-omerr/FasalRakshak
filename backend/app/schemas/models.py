@@ -72,15 +72,27 @@ class SellRecommendation(BaseModel):
     projected_gain: float
     risk_factor: str
 
-# --- SRS v2.0 PMFBY Insurance & Guardrail Models ---
+# --- SRS v4.0 PMFBY Insurance, SWI & Guardrail Models ---
+
+class ClaimEligibilityReport(BaseModel):
+    status: str = Field(..., example="APPLICABLE") # APPLICABLE or NOT_APPLICABLE
+    reason: str = Field(..., example="Vegetation drop, weather anomaly, and photo corroborate severe crop loss.")
+    reason_telugu: str = Field(..., example="మీ పొలంలో వాతావరణం, శాటిలైట్ మరియు ఫోటో ద్వారా పంట నష్టం నిర్ధారించబడింది.")
+    weather_signal: Dict[str, Any]
+    satellite_signal: Dict[str, Any]
+    photo_signal: Dict[str, Any]
 
 class SignalFusionScore(BaseModel):
     ndvi_drop_signal: bool
     weather_anomaly_signal: bool
+    swi_moisture_signal: bool
     farmer_photo_signal: bool
-    agreeing_signals_count: int # Must be >= 2 for alert
+    agreeing_signals_count: int # 2 of 4 signals required for claim alert
     confidence_score_pct: float
-    tier: str # PREVENTIVE_ADVISORY or PMFBY_CLAIM_ALERT
+    tier: str # PREVENTIVE_ADVISORY, PMFBY_CLAIM_ALERT, or NORMAL
+    swi_val: float = Field(0.45)
+    swi_trend: float = Field(-0.08)
+    eligibility_report: Optional[ClaimEligibilityReport] = None
 
 class PMFBYClaimRequest(BaseModel):
     farmer_id: str = Field(..., example="FARMER-TEL-9842")
@@ -88,10 +100,11 @@ class PMFBYClaimRequest(BaseModel):
     crop_type: str = Field(..., example="Cotton")
     damage_score: float = Field(..., example=0.72)
     confidence_pct: float = Field(..., example=88.5)
-    signals_used: List[str] = Field(..., example=["NDVI satellite drop 18%", "Open-Meteo dry spell 12 days"])
+    signals_used: List[str] = Field(..., example=["NDVI drop 18%", "Monsoon deficit 42%", "SWI decline 8%"])
     ndvi_before: float = Field(0.74)
     ndvi_after: float = Field(0.52)
     rainfall_deficit_pct: float = Field(42.0)
+    swi_val: float = Field(0.45)
     consent_channel: str = Field("WhatsApp Button", example="WhatsApp Quick Reply")
 
 class PMFBYClaimResponse(BaseModel):
@@ -131,6 +144,8 @@ class TriggerAlertRequest(BaseModel):
     phone: str = Field(..., example="+919848022338")
     ndvi_drop_pct: float = Field(..., example=18.5)
     rainfall_deficit_pct: float = Field(..., example=42.0)
+    swi_val: float = Field(0.42, example=0.42)
+    swi_trend_7d: float = Field(-0.08, example=-0.08)
     has_farmer_photo: bool = Field(..., example=True)
     lang: str = Field("TE", example="TE") # TE or EN
 
@@ -139,5 +154,5 @@ class TriggerAlertResponse(BaseModel):
     tier: str # PREVENTIVE_ADVISORY, PMFBY_CLAIM_ALERT, NORMAL
     confidence_score_pct: float
     evidence_pdf_url: Optional[str] = None
+    eligibility_status: str = "APPLICABLE"
     messages_dispatched: Dict[str, Any]
-
