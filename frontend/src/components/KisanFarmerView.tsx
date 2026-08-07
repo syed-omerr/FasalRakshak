@@ -18,7 +18,8 @@ import {
   X,
   ShieldCheck,
   Volume2,
-  Radio
+  Radio,
+  Send
 } from "lucide-react";
 
 interface KisanFarmerViewProps {

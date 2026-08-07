@@ -54,39 +54,44 @@ export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
     try {
       setSubmitting(true);
       const farmerName = safePlot.farmer || "Ramesh Reddy";
-      const res = await fetch("http://localhost:8000/api/pmfby/submit-claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          farmer_id: `FARMER-${farmerName.replace(/\s+/g, "-").toUpperCase()}`,
-          plot_id: safePlot.id,
-          crop_type: safePlot.crop_type,
-          damage_score: 0.72,
-          confidence_pct: confidenceScore,
-          signals_used: [
-            "NDVI satellite drop 18%",
-            "Open-Meteo dry spell 12 days",
-            hasPhoto ? "Geotagged ground photo" : "Weather anomaly sync",
-          ],
-          ndvi_before: 0.74,
-          ndvi_after: safePlot.ndvi_mean,
-          rainfall_deficit_pct: 42.0,
-          consent_channel: "WhatsApp Quick Reply Button",
-        }),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        setClaimResponse(json);
-      } else {
-        setClaimResponse({
-          acknowledgment_id: `PMFBY-TEL-2026-${Math.floor(10000 + Math.random() * 90000)}`,
-          submitted_at: new Date().toLocaleString(),
-          message_telugu: `మీ పొలం (${safePlot.id}) PMFBY క్లెయిమ్ విజ‌య‌వంతంగా న‌మోదైంది.`,
-          message_english: `Your PMFBY crop loss claim for plot (${safePlot.id}) has been successfully submitted within 72h window.`,
-          explainability_note: `Satellite green canopy health dropped by 18% and rainfall was 42% below average. 2 of 3 signals confirmed threshold breach.`,
+      const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+      
+      if (isLocal) {
+        const res = await fetch("http://localhost:8000/api/pmfby/submit-claim", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            farmer_id: `FARMER-${farmerName.replace(/\s+/g, "-").toUpperCase()}`,
+            plot_id: safePlot.id,
+            crop_type: safePlot.crop_type,
+            damage_score: 0.72,
+            confidence_pct: confidenceScore,
+            signals_used: [
+              "NDVI satellite drop 18%",
+              "Open-Meteo dry spell 12 days",
+              hasPhoto ? "Geotagged ground photo" : "Weather anomaly sync",
+            ],
+            ndvi_before: 0.74,
+            ndvi_after: safePlot.ndvi_mean,
+            rainfall_deficit_pct: 42.0,
+            consent_channel: "WhatsApp Quick Reply Button",
+          }),
         });
+
+        if (res.ok) {
+          const json = await res.json();
+          setClaimResponse(json);
+          return;
+        }
       }
+
+      setClaimResponse({
+        acknowledgment_id: `PMFBY-TEL-2026-${Math.floor(10000 + Math.random() * 90000)}`,
+        submitted_at: new Date().toLocaleString(),
+        message_telugu: `మీ పొలం (${safePlot.id}) PMFBY క్లెయిమ్ విజ‌య‌వంతంగా న‌మోదైంది.`,
+        message_english: `Your PMFBY crop loss claim for plot (${safePlot.id}) has been successfully submitted within 72h window.`,
+        explainability_note: `Satellite green canopy health dropped by 18% and rainfall was 42% below average. 2 of 3 signals confirmed threshold breach.`,
+      });
     } catch (err) {
       setClaimResponse({
         acknowledgment_id: `PMFBY-TEL-2026-${Math.floor(10000 + Math.random() * 90000)}`,
