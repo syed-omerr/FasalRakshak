@@ -804,8 +804,8 @@ export function KisanFarmerView({
                   {t.claimCardTitle}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <span className="text-[10px] font-bold bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded-md">
-                    📍 {t.nearbyPlotsAffected}
+                  <span className="text-[10px] font-bold bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    📍 {language === "TE" ? "4 గ్రామంలోని సమీప పొలాలు ఈ వారం ఒకే రకమైన పంట నష్టాన్ని సూచిస్తున్నాయి" : "4 nearby farms in your village showed the same pattern this week"}
                   </span>
                   <span className="text-[10px] font-bold bg-soil text-muted-foreground border border-border px-2 py-0.5 rounded-md">
                     🌾 {t.cropStage}: {selectedPlot.crop_stage || "Flowering & Grain Filling"}

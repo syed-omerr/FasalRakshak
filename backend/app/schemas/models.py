@@ -156,3 +156,28 @@ class TriggerAlertResponse(BaseModel):
     evidence_pdf_url: Optional[str] = None
     eligibility_status: str = "APPLICABLE"
     messages_dispatched: Dict[str, Any]
+
+# --- Step 4: Neighbouring-Farmer Corroboration Ledger Schemas ---
+
+class CorroborationLedgerEntryModel(BaseModel):
+    id: str
+    village_id: str
+    mandal_id: Optional[str] = None
+    village_name: Optional[str] = "Warangal North"
+    signal_type: str # "ndvi" | "swi" | "weather" | "combined"
+    plot_ids: Optional[List[str]] = None # Enterprise-only (redacted for Kisan/public)
+    plot_count: int
+    window_start: str
+    window_end: str
+    created_at: str
+    summary_text: Optional[str] = None
+    summary_text_telugu: Optional[str] = None
+
+class RecordBreachRequest(BaseModel):
+    village_id: str
+    plot_id: str
+    signal_type: str = "swi" # ndvi, swi, weather, combined
+    mandal_id: Optional[str] = None
+    village_name: Optional[str] = None
+    window_days: int = 7
+

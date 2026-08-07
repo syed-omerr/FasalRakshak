@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.schemas.models import (
     PMFBYClaimRequest,
     PMFBYClaimResponse,
@@ -93,7 +93,7 @@ def get_claim_corroboration(
 ):
     """
     SRS v5.0 FR-10.1 - FR-10.6: Claim Corroboration Evidence Endpoint.
-    Returns neighboring-plot cluster count, crop-stage sensitivity, and government disaster gazette ID.
+    Queries the persistent village corroboration ledger.
     """
     from app.services.pmfby import evaluate_claim_corroboration
     return evaluate_claim_corroboration(
@@ -101,6 +101,71 @@ def get_claim_corroboration(
         crop_type=crop_type,
         location=location,
         sowing_date=sowing_date
+    )
+
+@router.get("/corroboration-ledger")
+def get_all_corroboration_ledgers(
+    village_id: Optional[str] = Query(None),
+    from_date: Optional[str] = Query(None),
+    to_date: Optional[str] = Query(None),
+    signal_type: Optional[str] = Query(None),
+    role: str = Query("enterprise")
+):
+    """
+    FR-L3 & FR-L4: Persistent Neighbouring-Farmer Corroboration Ledger Endpoint.
+    Returns ledger entries filterable by village, date range, and signal type.
+    Gates plot_ids for enterprise role, redacting for kisan/public roles (FR-L6).
+    """
+    from app.services.corroboration_ledger import query_corroboration_ledger
+    return query_corroboration_ledger(
+        village_id=village_id,
+        from_date=from_date,
+        to_date=to_date,
+        signal_type=signal_type,
+        role=role
+    )
+
+@router.get("/villages/{village_id}/corroboration-ledger")
+def get_village_corroboration_ledger(
+    village_id: str,
+    from_date: Optional[str] = Query(None),
+    to_date: Optional[str] = Query(None),
+    signal_type: Optional[str] = Query(None),
+    role: str = Query("enterprise")
+):
+    """
+    FR-L3 & FR-L6: Village-scoped Corroboration Ledger API endpoint.
+    """
+    from app.services.corroboration_ledger import query_corroboration_ledger
+    return query_corroboration_ledger(
+        village_id=village_id,
+        from_date=from_date,
+        to_date=to_date,
+        signal_type=signal_type,
+        role=role
+    )
+
+@router.post("/corroboration-ledger/record")
+def record_corroboration_signal(payload: Dict[str, Any]):
+    """
+    FR-L1 & FR-L2: Records plot signal breach event and automatically creates/upserts
+    a CorroborationLedgerEntry when 2+ plots breach threshold in same village/window.
+    """
+    from app.services.corroboration_ledger import record_plot_signal_breach
+    village_id = payload.get("village_id", "warangal_north")
+    plot_id = payload.get("plot_id", "plot-101")
+    signal_type = payload.get("signal_type", "swi")
+    mandal_id = payload.get("mandal_id")
+    village_name = payload.get("village_name")
+    window_days = payload.get("window_days", 7)
+
+    return record_plot_signal_breach(
+        village_id=village_id,
+        plot_id=plot_id,
+        signal_type=signal_type,
+        mandal_id=mandal_id,
+        village_name=village_name,
+        window_days=window_days
     )
 
 @router.post("/ncip/submit")

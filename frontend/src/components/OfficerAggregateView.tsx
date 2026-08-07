@@ -21,7 +21,7 @@ import {
   PhoneCall
 } from "lucide-react";
 import { FarmPlot } from "../lib/plots";
-import { sendWhatsAppMessage } from "../lib/api";
+import { sendWhatsAppMessage, fetchVillageCorroborationLedger } from "../lib/api";
 import { loadFarmersFromStorage, FarmerProfile } from "../lib/supabase";
 
 export interface AggregateRiskData {
@@ -71,10 +71,20 @@ export function OfficerAggregateView({
   const [sendingWa, setSendingWa] = useState<string | null>(null);
   const [waSentNotice, setWaSentNotice] = useState<string | null>(null);
 
+  // Corroboration Ledger State (FR-L4)
+  const [corrobEntries, setCorrobEntries] = useState<any[]>([]);
+  const [villageFilter, setVillageFilter] = useState("all");
+  const [signalFilter, setSignalFilter] = useState("all");
+
   useEffect(() => {
     // Load registered farmers from storage
     setFarmersList(loadFarmersFromStorage());
-  }, []);
+
+    // Fetch Corroboration Ledger entries
+    fetchVillageCorroborationLedger(villageFilter, undefined, undefined, signalFilter, "enterprise").then((res) => {
+      if (res && Array.isArray(res)) setCorrobEntries(res);
+    });
+  }, [villageFilter, signalFilter]);
 
   const getFallbackRiskData = (): AggregateRiskData => ({
     village_name: "Warangal West Block",
@@ -605,6 +615,95 @@ export function OfficerAggregateView({
             ))}
           </div>
         )}
+      </div>
+
+      {/* SECTION: PERSISTENT NEIGHBOURING-FARMER CORROBORATION LEDGER (FR-L4) */}
+      <div className="rounded-2xl bg-card border border-border p-5 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+          <div>
+            <h4 className="text-sm font-black text-foreground uppercase tracking-wider flex items-center gap-2">
+              <Users className="size-4 text-primary animate-pulse" /> 🌐 Persistent Neighbouring-Farmer Corroboration Ledger (సమీప రైతుల డేటా రికార్డు)
+            </h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Village/Mandal-scoped cluster agreement ledger. Automatically logs and aggregates 2+ nearby farms breaching damage thresholds within 7-day windows.
+            </p>
+          </div>
+
+          {/* Filters Bar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={villageFilter}
+              onChange={(e) => setVillageFilter(e.target.value)}
+              className="bg-soil border border-border rounded-lg px-2.5 py-1 text-xs font-bold text-foreground cursor-pointer"
+            >
+              <option value="all">All Villages / Mandals</option>
+              <option value="warangal_north">Warangal North</option>
+              <option value="parkal">Parkal Mandal</option>
+              <option value="narsampet">Narsampet</option>
+              <option value="nalgonda_east">Nalgonda East</option>
+              <option value="karimnagar">Karimnagar</option>
+              <option value="suryapet">Suryapet</option>
+            </select>
+
+            <select
+              value={signalFilter}
+              onChange={(e) => setSignalFilter(e.target.value)}
+              className="bg-soil border border-border rounded-lg px-2.5 py-1 text-xs font-bold text-foreground cursor-pointer"
+            >
+              <option value="all">All Signal Types</option>
+              <option value="swi">SWI Root Moisture</option>
+              <option value="ndvi">NDVI Satellite Canopy</option>
+              <option value="weather">Weather Deficit</option>
+              <option value="combined">Combined Multi-Signal</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Ledger Entries Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {corrobEntries.map((entry) => (
+            <div key={entry.id} className="bg-soil/80 border border-border/80 rounded-xl p-4 space-y-2.5 shadow hover:border-primary/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-foreground">{entry.village_name}</span>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase border ${
+                  entry.signal_type === "swi"
+                    ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                    : entry.signal_type === "ndvi"
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                    : "bg-primary/10 border-primary/30 text-primary"
+                }`}>
+                  {entry.signal_type} Signal
+                </span>
+              </div>
+
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-primary">{entry.plot_count}</span>
+                <span className="text-xs font-bold text-foreground">Nearby Enrolled Plots Corroborated</span>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                "{entry.summary_text}"
+              </p>
+
+              <div className="pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex flex-col gap-1">
+                <div className="flex justify-between">
+                  <span>Window Dates:</span>
+                  <strong className="text-foreground">{entry.window_start} → {entry.window_end}</strong>
+                </div>
+                {entry.plot_ids && (
+                  <div className="flex flex-wrap items-center gap-1 mt-1">
+                    <span className="font-bold text-muted-foreground">Enterprise Plot IDs:</span>
+                    {entry.plot_ids.map((pid: string) => (
+                      <span key={pid} className="bg-card border border-border px-1.5 py-0.5 rounded font-mono text-[9px]">
+                        {pid}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* SECTION: VILLAGE COMMUNITY TRANSPARENCY LEDGER (SRS v5.0 Roadmap C) */}

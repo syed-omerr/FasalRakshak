@@ -220,34 +220,50 @@ def evaluate_claim_corroboration(
     sowing_date: str = "2026-06-15"
 ) -> Dict[str, Any]:
     """
-    SRS v5.0 FR-10.1 - FR-10.6: Claim Corroboration Evidence Engine.
-    Computes:
-    1. Neighboring-plot cluster agreement (nearby plots breaching threshold).
-    2. Sowing-date / crop-stage awareness (flowering vs vegetative stage).
-    3. Government disaster declaration lookup (Telangana Gazette notifications).
+    SRS v5.0 FR-10.1 - FR-10.6 & Corroboration Ledger (FR-L5):
+    Queries the persistent village corroboration ledger instead of an ad-hoc inline check.
     """
-    # 1. Cluster Corroboration (nearby enrolled plots affected in 5km radius)
-    cluster_count = 4 if "101" in plot_id or "102" in plot_id else 3
+    from app.services.corroboration_ledger import get_latest_village_corroboration
 
-    # 2. Sowing Stage Sensitivity
+    # Derive village_id from location string
+    loc_clean = location.lower()
+    if "parkal" in loc_clean:
+        village_id = "parkal"
+    elif "narsampet" in loc_clean:
+        village_id = "narsampet"
+    elif "nalgonda" in loc_clean:
+        village_id = "nalgonda_east"
+    elif "karimnagar" in loc_clean:
+        village_id = "karimnagar"
+    elif "suryapet" in loc_clean:
+        village_id = "suryapet"
+    else:
+        village_id = "warangal_north"
+
+    ledger_data = get_latest_village_corroboration(village_id=village_id, role="kisan")
+    cluster_count = ledger_data.get("plot_count", 0)
+
     stage = "Flowering & Grain Filling" if "101" in plot_id or "102" in plot_id else "Vegetative Growth"
-
-    # 3. Government Disaster Gazette Lookup
-    gazette_id = "TS-GAZETTE-2026-WARANGAL-042" if "Warangal" in location else "TS-GAZETTE-2026-KARIMNAGAR-088"
+    gazette_id = "TS-GAZETTE-2026-WARANGAL-042" if any(k in loc_clean for k in ["warangal", "parkal", "narsampet"]) else "TS-GAZETTE-2026-KARIMNAGAR-088"
     gazette_status = "OFFICIALLY_DECLARED_DROUGHT_MANDAL"
 
     return {
         "plot_id": plot_id,
+        "village_id": village_id,
         "crop_type": crop_type,
         "location": location,
         "sowing_date": sowing_date,
         "crop_stage": stage,
         "cluster_plots_affected": cluster_count,
         "cluster_radius_km": 5.0,
+        "ledger_entry_id": ledger_data.get("entry_id"),
+        "has_corroboration": ledger_data.get("has_corroboration", False),
+        "corroboration_line_english": ledger_data.get("corroboration_line_english"),
+        "corroboration_line_telugu": ledger_data.get("corroboration_line_telugu"),
         "disaster_gazette_id": gazette_id,
         "disaster_gazette_status": gazette_status,
         "corroboration_summary": (
-            f"Corroborated by {cluster_count} neighboring plots within 5km, "
+            f"Sourced from Corroboration Ledger ({ledger_data.get('corroboration_line_english')}), "
             f"Crop Stage ({stage}), and Government Gazette Notice #{gazette_id}."
         )
     }
