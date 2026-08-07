@@ -19,7 +19,8 @@ import {
   ShieldCheck,
   Volume2,
   Radio,
-  Send
+  Send,
+  FileText
 } from "lucide-react";
 
 interface KisanFarmerViewProps {
@@ -841,6 +842,16 @@ export function KisanFarmerView({
                   <Send className="size-4" />
                   <span>📲 WhatsApp నవీకరణ పంపండి (Send WhatsApp Update Receipt)</span>
                 </button>
+                <a
+                  href="/FasalRakshak_Claim_Report_Sample.pdf"
+                  download="FasalRakshak_Claim_Report_Sample.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs shadow transition-all flex items-center justify-center gap-2 cursor-pointer block text-center"
+                >
+                  <FileText className="size-4 text-black inline-block" />
+                  <span>📄 PMFBY క్లెయిమ్ నివేదికను డౌన్‌లోడ్ చేయండి (Download Claim Report PDF)</span>
+                </a>
               </div>
             ) : (
               <div className="space-y-4">

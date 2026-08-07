@@ -334,6 +334,17 @@ export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
                 <strong className="text-amber-400">Valid (Active 48h remaining)</strong>
               </div>
             </div>
+
+            <a
+              href="/FasalRakshak_Claim_Report_Sample.pdf"
+              download="FasalRakshak_Claim_Report_Sample.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full mt-3 py-2.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <FileText className="size-4 text-black" />
+              <span>📄 Download PMFBY Claim Report (PDF)</span>
+            </a>
           </div>
 
           <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1.5">

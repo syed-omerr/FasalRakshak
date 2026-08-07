@@ -494,23 +494,16 @@ export function RealTimeAlertsFeed({
                   {/* Action Panel */}
                   <div className="flex items-center gap-2">
                     {/* PDF download if available */}
-                    {item.evidence_pdf_url && (
-                      <a
-                        href={item.evidence_pdf_url.startsWith("http") ? item.evidence_pdf_url : `http://localhost:8000${item.evidence_pdf_url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[0.68rem] text-primary hover:underline font-bold"
-                        onClick={(e) => {
-                          if (isDemoMode) {
-                            e.preventDefault();
-                            alert("PDF downloads require the FastAPI backend to be running. This works dynamically when online!");
-                          }
-                        }}
-                      >
-                        <FileText className="size-3.5" />
-                        View Evidence Report (PDF)
-                      </a>
-                    )}
+                    <a
+                      href="/FasalRakshak_Claim_Report_Sample.pdf"
+                      download="FasalRakshak_Claim_Report_Sample.pdf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 px-2.5 py-1 rounded text-[0.68rem] font-bold transition-all"
+                    >
+                      <FileText className="size-3.5 text-amber-300" />
+                      <span>📄 Download Claim Report (PDF)</span>
+                    </a>
 
                     {/* Status / Quick Action button */}
                     {isAdvisory ? (

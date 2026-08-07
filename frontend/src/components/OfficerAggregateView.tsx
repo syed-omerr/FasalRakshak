@@ -550,6 +550,17 @@ export function OfficerAggregateView({
                     <span className="font-bold text-muted-foreground">Officer Verification Actions</span>
                     
                     <div className="space-y-2">
+                      <a
+                        href="/FasalRakshak_Claim_Report_Sample.pdf"
+                        download="FasalRakshak_Claim_Report_Sample.pdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow text-xs"
+                      >
+                        <FileText className="size-4 text-black" />
+                        <span>📄 Download Claim Report (PDF)</span>
+                      </a>
+
                       <button
                         onClick={() => onOverrideClaim(claim.acknowledgment_id, "APPROVED_BY_INSURER")}
                         className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
