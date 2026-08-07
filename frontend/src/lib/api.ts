@@ -46,11 +46,11 @@ export interface ClaimSubmissionPayload {
 
 export interface ClaimResponse {
   status: string;
-  acknowledgment_id: str;
+  acknowledgment_id: string;
   submitted_at: string;
-  farmer_id: str;
-  plot_id: str;
-  crop_type: str;
+  farmer_id: string;
+  plot_id: string;
+  crop_type: string;
   message_telugu: string;
   message_english: string;
   explainability_note: string;
@@ -97,7 +97,7 @@ export async function fetchSwiTelemetry(plotId: string, cropType: string = "Cott
  * 2. Fetch 3-Source Claim Eligibility Report
  */
 export async function fetchEligibilityReport(
-  cropType: str = "Cotton",
+  cropType: string = "Cotton",
   ndviDropPct: number = 18.5,
   rainfallDeficitPct: number = 42.0,
   hasPhoto: boolean = true
