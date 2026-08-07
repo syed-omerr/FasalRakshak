@@ -788,6 +788,11 @@ function StatsBand() {
 function DashboardSection({
   plots,
   selectedPlot,
+  setSelectedPlot,
+  showNdviOverlay,
+  setShowNdviOverlay,
+  weatherList = [],
+  onAddNewPlot,
   onRemovePlot,
   InteractiveMap,
 }: {
