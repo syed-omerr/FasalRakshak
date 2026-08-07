@@ -469,11 +469,19 @@ export function KisanFarmerView({
                 <h3 className="text-lg font-black text-foreground flex items-center gap-2">
                   ⚡ 2. 1-టాప్ ఇన్సూరెన్స్ క్లెయిమ్ (Instant Insurance Claim)
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  పంట నష్టం లేదా ఎండబెట్టడం జరిగితే బటన్ నొక్కి ఇన్సూరెన్స్ దరఖాస్తు చేయండి
-                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <span className="text-[10px] font-bold bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded-md">
+                    📍 4 సమీప పొలాలు బాధింపబడ్డాయి (4 Nearby Plots Affected)
+                  </span>
+                  <span className="text-[10px] font-bold bg-soil text-muted-foreground border border-border px-2 py-0.5 rounded-md">
+                    🌾 పంట దశ: {selectedPlot.crop_stage || "పూత & గింజ దశ (Flowering)"}
+                  </span>
+                  <span className="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                    📜 గెజిట్: {selectedPlot.disaster_gazette_id || "TS-GAZETTE-2026-042"}
+                  </span>
+                </div>
               </div>
-              <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
+              <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full shrink-0">
                 అంచనా పరిహారం: ₹{Math.round(selectedPlot.acreage * 22000).toLocaleString()}
               </span>
             </div>

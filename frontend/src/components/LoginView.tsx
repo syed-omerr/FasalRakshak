@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { saveSessionToStorage } from "../lib/supabase";
 import { 
   User, 
   Building2, 
@@ -52,58 +53,30 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     setTimeout(() => {
       setLoading(false);
       if (activeRole === "kisan") {
-        if (isSignUp) {
-          if (!farmerName.trim() || !mobileNumber.trim()) {
-            setErrorMessage("Please fill in your name and mobile number.");
-            return;
-          }
-          onLoginSuccess({
-            role: "kisan",
-            name: farmerName,
-            phone: mobileNumber,
-            village: villageName,
-            crop: cropType
-          });
-        } else {
-          // Login existing
-          if (!mobileNumber.trim()) {
-            setErrorMessage("Please enter your registered mobile number.");
-            return;
-          }
-          onLoginSuccess({
-            role: "kisan",
-            name: "Ramesh Reddy",
-            phone: mobileNumber,
-            village: "Warangal West",
-            crop: "Cotton"
-          });
-        }
+        const cleanPhone = mobileNumber.trim().replace(/[^\d+]/g, "") || "9848022339";
+        const resolvedName = farmerName.trim() || `Farmer (${cleanPhone})`;
+
+        const sessionObj = {
+          role: "kisan" as const,
+          name: resolvedName,
+          phone: cleanPhone,
+          village: villageName || "Warangal West",
+          crop: cropType || "Cotton"
+        };
+
+        saveSessionToStorage(sessionObj);
+        onLoginSuccess(sessionObj);
       } else {
-        // Enterprise
-        if (isSignUp) {
-          if (!email.trim() || !officialId.trim() || !password.trim()) {
-            setErrorMessage("Please fill in email, agency ID, and password.");
-            return;
-          }
-          onLoginSuccess({
-            role: "enterprise",
-            name: email.split("@")[0].toUpperCase() + " (Officer)",
-            email: email,
-            district: district
-          });
-        } else {
-          // Login existing
-          if (!email.trim() || !password.trim()) {
-            setErrorMessage("Please enter your email and password.");
-            return;
-          }
-          onLoginSuccess({
-            role: "enterprise",
-            name: "ADMIN OFFICER",
-            email: email,
-            district: "Warangal Region"
-          });
-        }
+        const resolvedEmail = email.trim() || "officer@telangana.gov.in";
+        const sessionObj = {
+          role: "enterprise" as const,
+          name: email.includes("@") ? email.split("@")[0].toUpperCase() + " (Officer)" : "ADMIN OFFICER",
+          email: resolvedEmail,
+          district: district || "Warangal Region"
+        };
+
+        saveSessionToStorage(sessionObj);
+        onLoginSuccess(sessionObj);
       }
     }, 1000);
   };

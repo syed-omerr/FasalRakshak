@@ -36,6 +36,16 @@ import {
   FileText,
 } from "lucide-react";
 
+import { 
+  loadSessionFromStorage, 
+  saveSessionToStorage, 
+  loadPlotsFromStorage, 
+  savePlotsToStorage, 
+  loadClaimsFromStorage, 
+  saveClaimsToStorage,
+  clearSessionStorage 
+} from "@/lib/supabase";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -159,11 +169,11 @@ function Index() {
     email?: string;
     district?: string;
     crop?: string;
-  } | null>(null);
+  } | null>(() => loadSessionFromStorage());
 
   const [productView, setProductView] = useState<"kisan" | "enterprise">("enterprise");
-  const [plotList, setPlotList] = useState<FarmPlot[]>(INITIAL_PLOTS);
-  const [selectedPlot, setSelectedPlot] = useState<FarmPlot>(INITIAL_PLOTS[0]);
+  const [plotList, setPlotList] = useState<FarmPlot[]>(() => loadPlotsFromStorage(INITIAL_PLOTS));
+  const [selectedPlot, setSelectedPlot] = useState<FarmPlot>(() => loadPlotsFromStorage(INITIAL_PLOTS)[0] || INITIAL_PLOTS[0]);
   const [showNdviOverlay, setShowNdviOverlay] = useState<boolean>(true);
   const [weatherList, setWeatherList] = useState<WeatherData[]>([]);
   const [language, setLanguage] = useState<"EN" | "HI" | "TE">("EN");
@@ -252,7 +262,11 @@ function Index() {
   }
 
   const handleAddNewPlot = (newPlot: FarmPlot) => {
-    setPlotList((prev) => [newPlot, ...prev]);
+    setPlotList((prev) => {
+      const updated = [newPlot, ...prev];
+      savePlotsToStorage(updated);
+      return updated;
+    });
     setSelectedPlot(newPlot);
 
     // If new plot triggers claim or advisory, add to alerts queue automatically
@@ -280,6 +294,7 @@ function Index() {
     if (plotList.length <= 1) return;
     const updated = plotList.filter((p) => p.id !== plotId);
     setPlotList(updated);
+    savePlotsToStorage(updated);
 
     if (selectedPlot.id === plotId && updated.length > 0) {
       setSelectedPlot(updated[0]);
@@ -292,10 +307,38 @@ function Index() {
     );
   };
 
-  const handleOverrideClaim = (ackId: string, action: string) => {
-    setFiledClaims((prev) =>
-      prev.map((c) => (c.acknowledgment_id === ackId ? { ...c, status: action } : c))
+  const handleAddClaim = (claim: any) => {
+    setFiledClaims((prev) => {
+      let updated: any[];
+      if (prev.some((c) => c.plot_id === claim.plot_id)) {
+        updated = prev.map((c) => (c.plot_id === claim.plot_id ? { ...c, ...claim } : c));
+      } else {
+        updated = [claim, ...prev];
+      }
+      saveClaimsToStorage(updated);
+      return updated;
+    });
+
+    // Sync alerts list status
+    setDispatchedAlerts((prev) =>
+      prev.map((a) =>
+        a.plot_id === claim.plot_id && a.tier === "PMFBY_CLAIM_ALERT"
+          ? {
+              ...a,
+              status: "CLAIM_SUBMITTED" as const,
+              acknowledgment_id: claim.acknowledgment_id
+            }
+          : a
+      )
     );
+  };
+
+  const handleOverrideClaim = (ackId: string, action: string) => {
+    setFiledClaims((prev) => {
+      const updated = prev.map((c) => (c.acknowledgment_id === ackId ? { ...c, status: action } : c));
+      saveClaimsToStorage(updated);
+      return updated;
+    });
     // Sync status change in alerts feed as well
     setDispatchedAlerts((prev) =>
       prev.map((a) =>
@@ -310,27 +353,6 @@ function Index() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ acknowledgment_id: ackId, action })
     }).catch(() => {});
-  };
-
-  const handleAddClaim = (claim: any) => {
-    setFiledClaims((prev) => {
-      if (prev.some((c) => c.plot_id === claim.plot_id)) {
-        return prev.map((c) => c.plot_id === claim.plot_id ? { ...c, ...claim } : c);
-      }
-      return [claim, ...prev];
-    });
-    // Sync alerts list status
-    setDispatchedAlerts((prev) =>
-      prev.map((a) =>
-        a.plot_id === claim.plot_id && a.tier === "PMFBY_CLAIM_ALERT"
-          ? {
-              ...a,
-              status: "CLAIM_SUBMITTED" as const,
-              acknowledgment_id: claim.acknowledgment_id
-            }
-          : a
-      )
-    );
   };
 
   const handleLoginSuccess = (session: any) => {

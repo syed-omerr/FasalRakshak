@@ -8,6 +8,10 @@ export interface FarmPlot {
   ndvi_mean: number;
   swi_mean?: number; // Soil Water Index (0.00 - 1.00)
   swi_trend_7d?: number; // 7-day moving trend
+  sowing_date?: string; // SRS v5.0 Sowing Date
+  crop_stage?: string; // SRS v5.0 Crop Stage Awareness
+  cluster_plots_affected?: number; // SRS v5.0 Neighboring Cluster Count
+  disaster_gazette_id?: string; // SRS v5.0 Government Disaster Declaration Gazette ID
   health_status: "HEALTHY" | "MODERATE" | "STRESSED" | "CRITICAL";
   center: [number, number];
   polygon: [number, number][];
@@ -24,6 +28,10 @@ export const INITIAL_PLOTS: FarmPlot[] = [
     ndvi_mean: 0.68,
     swi_mean: 0.65,
     swi_trend_7d: 0.01,
+    sowing_date: "2026-06-15",
+    crop_stage: "Flowering & Grain Filling",
+    cluster_plots_affected: 4,
+    disaster_gazette_id: "TS-GAZETTE-2026-WARANGAL-042",
     health_status: "HEALTHY",
     center: [17.9784, 79.5941],
     polygon: [
@@ -43,6 +51,10 @@ export const INITIAL_PLOTS: FarmPlot[] = [
     ndvi_mean: 0.52,
     swi_mean: 0.38,
     swi_trend_7d: -0.12,
+    sowing_date: "2026-06-10",
+    crop_stage: "Flowering & Pegging",
+    cluster_plots_affected: 4,
+    disaster_gazette_id: "TS-GAZETTE-2026-NALGONDA-019",
     health_status: "MODERATE",
     center: [17.0500, 79.2700],
     polygon: [
@@ -62,6 +74,10 @@ export const INITIAL_PLOTS: FarmPlot[] = [
     ndvi_mean: 0.38,
     swi_mean: 0.42,
     swi_trend_7d: -0.06,
+    sowing_date: "2026-06-01",
+    crop_stage: "Grain Filling & Tasseling",
+    cluster_plots_affected: 3,
+    disaster_gazette_id: "TS-GAZETTE-2026-KARIMNAGAR-088",
     health_status: "STRESSED",
     center: [18.4386, 79.1288],
     polygon: [

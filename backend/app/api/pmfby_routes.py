@@ -83,3 +83,22 @@ def list_claims():
     SRS v4.0 FR-5.1: Dashboard view for Agriculture Officers listing all filed claims.
     """
     return FILED_CLAIMS_STORE
+
+@router.get("/corroboration/{plot_id}")
+def get_claim_corroboration(
+    plot_id: str,
+    crop_type: str = Query("Cotton"),
+    location: str = Query("Warangal, Telangana"),
+    sowing_date: str = Query("2026-06-15")
+):
+    """
+    SRS v5.0 FR-10.1 - FR-10.6: Claim Corroboration Evidence Endpoint.
+    Returns neighboring-plot cluster count, crop-stage sensitivity, and government disaster gazette ID.
+    """
+    from app.services.pmfby import evaluate_claim_corroboration
+    return evaluate_claim_corroboration(
+        plot_id=plot_id,
+        crop_type=crop_type,
+        location=location,
+        sowing_date=sowing_date
+    )
