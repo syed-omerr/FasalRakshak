@@ -304,11 +304,16 @@ export function InteractiveMap({
 
       {/* Leaflet Map Renderer */}
       <div 
+        ref={(node) => {
+          if (node) {
+            (node as any)._leaflet_id = null;
+          }
+        }}
         id="leaflet-map-container" 
         className={`flex-1 w-full h-full ${clickToAddMode ? "cursor-crosshair" : ""}`}
       >
         <MapContainer
-          key="fasalrakshak-static-leaflet-map"
+          key={`leaflet-map-${selectedPlot.id}`}
           center={selectedPlot.center}
           zoom={13}
           scrollWheelZoom={false}

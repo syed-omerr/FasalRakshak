@@ -274,12 +274,24 @@ export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
                     <span>{submitting ? "Submitting to PMFBY Portal..." : language === "TELUGU" ? "క్లెయిమ్ సమర్పించు (1-Tap Approve)" : "Submit PMFBY Claim (1-Tap Approve)"}</span>
                   </button>
                 ) : (
-                  <div className="bg-emerald-950/60 border border-emerald-500/50 p-2.5 rounded text-emerald-300 text-xs space-y-1">
+                  <div className="bg-emerald-950/60 border border-emerald-500/50 p-2.5 rounded text-emerald-300 text-xs space-y-2">
                     <div className="font-bold flex items-center gap-1.5 text-emerald-400">
                       <CheckCircle2 className="size-4" /> PMFBY Claim File Acknowledged!
                     </div>
                     <div className="text-[0.68rem]">Reference ID: <strong className="text-white">{claimResponse.acknowledgment_id}</strong></div>
                     <div className="text-[0.65rem] opacity-80">Timestamp: {claimResponse.submitted_at}</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const msg = `గౌరవప్రదమైన ${safePlot.farmer} గారూ, మీ PMFBY పంట క్లెయిమ్ (${claimResponse.acknowledgment_id}) నమోదు చేయబడింది. అంచనా పరిహారం: ₹${Math.round(safePlot.acreage * 22000).toLocaleString()}. - ఫసల్‌రక్షక్ TELANGANA.`;
+                        const waUrl = `https://api.whatsapp.com/send?phone=919848022339&text=${encodeURIComponent(msg)}`;
+                        window.open(waUrl, "_blank");
+                      }}
+                      className="w-full mt-2 py-2 px-3 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Send className="size-3.5" />
+                      <span>📲 Dispatch WhatsApp Update (+91 98480 22339)</span>
+                    </button>
                   </div>
                 )}
               </>

@@ -815,7 +815,7 @@ export function KisanFarmerView({
             </div>
 
             {currentClaim ? (
-              <div className="bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-5 space-y-2">
+              <div className="bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-5 space-y-3">
                 <div className="flex items-center justify-between text-sm font-black text-emerald-400">
                   <span className="flex items-center gap-2"><CheckCircle className="size-5" /> {t.claimFiledSuccess}</span>
                   <span className="bg-emerald-500/20 px-3 py-1 rounded text-xs">{currentClaim.acknowledgment_id}</span>
@@ -823,6 +823,18 @@ export function KisanFarmerView({
                 <p className="text-xs text-muted-foreground">
                   {t.claimFiledMsg.replace("{payout}", currentClaim.estimated_payout.toLocaleString())}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const msg = `గౌరవప్రదమైన ${selectedPlot.farmer} గారూ, మీ PMFBY క్లెయిమ్ ఐడీ: ${currentClaim.acknowledgment_id}. అంచనా పరిహారం: ₹${currentClaim.estimated_payout.toLocaleString()}. వివరాలు భద్రపరచబడ్డాయి. — FasalRakshak Telangana`;
+                    const waUrl = `https://api.whatsapp.com/send?phone=919848022339&text=${encodeURIComponent(msg)}`;
+                    window.open(waUrl, "_blank");
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Send className="size-4" />
+                  <span>📲 WhatsApp నవీకరణ పంపండి (Send WhatsApp Update Receipt)</span>
+                </button>
               </div>
             ) : (
               <div className="space-y-4">
