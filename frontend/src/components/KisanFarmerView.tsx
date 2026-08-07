@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FarmPlot } from "../lib/plots";
+import { NdviAnalytics } from "./NdviAnalytics";
 import { chatWithGoogleAIAssistant, submitPMFBYClaim } from "../lib/api";
 import {
   Mic,
@@ -553,8 +554,6 @@ export function KisanFarmerView({
     reader.readAsDataURL(file);
   };
 
-  const currentClaim = filedClaims.find((c) => c.plot_id === selectedPlot?.id);
-
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 text-foreground pb-28">
       
@@ -571,60 +570,50 @@ export function KisanFarmerView({
           </p>
         </div>
 
-        {/* Dynamic Vernacular Language Switch Buttons */}
-        <div className="flex items-center gap-1.5 bg-soil p-1.5 rounded-xl border border-border">
-          <button
-            onClick={() => setLanguage("TE")}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
-              language === "TE" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            🌾 తెలుగు
-          </button>
-          <button
-            onClick={() => setLanguage("HI")}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
-              language === "HI" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            🇮🇳 हिंदी
-          </button>
-          <button
-            onClick={() => setLanguage("EN")}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
-              language === "EN" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            🇬🇧 English
-          </button>
+        {/* Dynamic Multilingual Language Switcher Pill */}
+        <div className="flex items-center gap-1.5 bg-soil p-1.5 rounded-2xl border border-border shrink-0 self-start md:self-auto">
+          {(["TE", "HI", "EN"] as const).map((lang) => (
+            <button
+              key={lang}
+              type="button"
+              onClick={() => {
+                setLanguage(lang);
+                const greeting = LOCALIZED_TEXT[lang].welcomeGreeting;
+                setDialogue((prev) => [
+                  { sender: "assistant", text: greeting, translated: LOCALIZED_TEXT.EN.welcomeGreeting, lang }
+                ]);
+                speakText(greeting, lang);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                language === lang
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {lang === "TE" ? "తెలుగు" : lang === "HI" ? "हिंदी" : "English"}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* PLOT SELECTION BANNER */}
-      {selectedPlot && (
-        <div className="bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/20 p-2.5 rounded-xl text-primary font-black text-lg">
-              🌾
-            </div>
+      {/* ========================================================================= */}
+      {/* PLOT SELECTION DROPDOWN & REGISTRATION CONTROL BAR                        */}
+      {/* ========================================================================= */}
+      {!isOnboarding && (
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="size-5 text-primary shrink-0" />
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-black text-foreground">{selectedPlot.name}</h2>
-                <span className="text-[11px] font-bold bg-soil px-2 py-0.5 rounded text-muted-foreground border border-border">
-                  {selectedPlot.crop_type} • {selectedPlot.location}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {t.area}: <strong>{selectedPlot.acreage} {t.hectares} ({(selectedPlot.acreage * 2.471).toFixed(1)} {t.acres})</strong>
-              </p>
+              <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider block">{t.selectPlotTitle}</span>
+              <span className="text-sm font-black text-foreground">{activePlot.name} • {activePlot.crop_type} ({activePlot.acreage} Acres)</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <select
-              value={selectedPlot.id}
+              value={activePlot.id}
               onChange={(e) => {
-                const p = plots.find((x) => x.id === e.target.value);
+                const p = plots.find((item) => item.id === e.target.value);
                 if (p) onSelectPlot(p);
               }}
               className="bg-soil border border-border rounded-xl px-3 py-2 text-xs font-bold text-foreground cursor-pointer"
@@ -725,10 +714,12 @@ export function KisanFarmerView({
       {/* ========================================================================= */}
       {/* DYNAMIC LOCALIZED FARMER CARDS                                            */}
       {/* ========================================================================= */}
-      {selectedPlot && (
-        <div className="space-y-6">
-          
-          {/* CARD 1: FIELD CONDITION */}
+      <div className="space-y-6">
+        
+        {/* SATELLITE NDVI & SWI TELEMETRY ANALYTICS CARD */}
+        <NdviAnalytics plot={activePlot} />
+
+        {/* CARD 1: FIELD CONDITION */}
           <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-lg">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-lg font-black text-foreground flex items-center gap-2">
@@ -925,7 +916,6 @@ export function KisanFarmerView({
             )}
           </div>
         </div>
-      )}
 
       {/* ========================================================================= */}
       {/* FLOATING VOICE ASSISTANT MIC BUTTON (BOTTOM-RIGHT)                       */}

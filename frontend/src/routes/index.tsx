@@ -417,6 +417,9 @@ function Index() {
         productView={productView}
         setProductView={setProductView}
         authSession={authSession}
+        plots={plotList}
+        selectedPlot={selectedPlot}
+        onSelectPlot={setSelectedPlot}
         onLogout={() => {
           clearSessionStorage();
           setAuthSession(null);
@@ -500,6 +503,9 @@ function Nav({
   productView,
   setProductView,
   authSession,
+  plots,
+  selectedPlot,
+  onSelectPlot,
   onLogout
 }: {
   language: "EN" | "HI" | "TE";
@@ -509,6 +515,9 @@ function Nav({
   productView: "kisan" | "enterprise";
   setProductView: (view: "kisan" | "enterprise") => void;
   authSession: any;
+  plots: FarmPlot[];
+  selectedPlot: FarmPlot | null;
+  onSelectPlot: (plot: FarmPlot) => void;
   onLogout: () => void;
 }) {
   return (
@@ -543,6 +552,40 @@ function Nav({
         )}
 
         <div className="flex items-center gap-3">
+          {/* Admin User Switcher / Impersonation Dropdown */}
+          {authSession?.role === "enterprise" && (
+            <div className="flex items-center gap-1.5 bg-card border border-primary/40 rounded-full px-3 py-1 text-xs font-bold text-foreground">
+              <span className="text-primary">👥 Admin Inspect:</span>
+              <select
+                value={selectedPlot?.id || plots[0]?.id || ""}
+                onChange={(e) => {
+                  const targetPlot = plots.find((p) => p.id === e.target.value);
+                  if (targetPlot) {
+                    onSelectPlot(targetPlot);
+                    setProductView("kisan");
+                  }
+                }}
+                className="bg-transparent border-none text-foreground font-extrabold cursor-pointer focus:outline-none text-xs"
+              >
+                {plots.map((p) => (
+                  <option key={p.id} value={p.id} className="bg-card text-foreground font-bold">
+                    {p.farmer} ({p.crop_type})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Return to Enterprise Button if Admin is inspecting Kisan view */}
+          {authSession?.role === "enterprise" && productView === "kisan" && (
+            <button
+              onClick={() => setProductView("enterprise")}
+              className="rounded-full bg-primary text-primary-foreground font-black text-xs px-3.5 py-1.5 shadow-md hover:bg-primary/95 transition-all cursor-pointer"
+            >
+              ↩ Return to Enterprise
+            </button>
+          )}
+
           {/* Authenticated User Profile Badge */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-soil border border-border text-xs font-bold text-foreground">
             <span>{productView === "kisan" ? "🌾" : "💼"}</span>
