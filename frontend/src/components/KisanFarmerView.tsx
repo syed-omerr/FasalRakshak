@@ -238,9 +238,23 @@ export function KisanFarmerView({
 
   const dialogueEndRef = useRef<HTMLDivElement>(null);
 
-  // Update calamity default when language switches
+  // Update calamity default and chatbot greeting when language switches
   useEffect(() => {
     setSelectedCalamity(LOCALIZED_TEXT[language].calamities[0]);
+    setDialogue((prev) => {
+      if (prev.length === 0 || prev[0].sender === "assistant") {
+        return [
+          {
+            sender: "assistant",
+            text: LOCALIZED_TEXT[language].welcomeGreeting,
+            translated: LOCALIZED_TEXT.EN.welcomeGreeting,
+            lang: language
+          },
+          ...prev.slice(1)
+        ];
+      }
+      return prev;
+    });
   }, [language]);
 
   useEffect(() => {
