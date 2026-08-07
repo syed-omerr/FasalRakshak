@@ -1,0 +1,10 @@
+{
+  "name": "fasalrakshak-monorepo",
+  "private": true,
+  "version": "2.0.0",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "cd frontend && npm run dev",
+    "start": "cd frontend && npm run preview"
+  }
+}
