@@ -406,6 +406,7 @@ export function KisanFarmerView({
       loss_percentage: 55,
       estimated_payout: estPayout,
       evidence_pdf_url: "/static/pdf/sample_evidence.pdf",
+      evidence_photo_url: uploadedPhoto || "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=300&q=80",
       consent_channel: "1-Click Farmer Portal",
       consent_timestamp: nowStr,
       acknowledgment_id: ackId,
@@ -472,15 +473,41 @@ export function KisanFarmerView({
     }
   };
 
-  const handleSimulatePhotoUpload = () => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTriggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRealPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setPhotoVerifying(true);
-    setTimeout(() => {
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
       setPhotoVerifying(false);
-      setUploadedPhoto("https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=300&q=80");
+      setUploadedPhoto(dataUrl);
+
+      // If a claim already exists for this plot, update its evidence photo
+      if (selectedPlot) {
+        const existingClaim = filedClaims.find((c) => c.plot_id === selectedPlot.id);
+        if (existingClaim) {
+          onAddClaim({
+            ...existingClaim,
+            evidence_photo_url: dataUrl
+          });
+        }
+      }
+
       const speech = t.photoSuccess;
       setDialogue((prev) => [...prev, { sender: "assistant", text: speech, translated: LOCALIZED_TEXT.EN.photoSuccess, lang: language }]);
       speakText(speech, language);
-    }, 1500);
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const currentClaim = filedClaims.find((c) => c.plot_id === selectedPlot?.id);
@@ -834,8 +861,17 @@ export function KisanFarmerView({
                       <p className="text-sm font-bold text-foreground">{t.takePhotoSub}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{t.takePhotoHint}</p>
                     </div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleRealPhotoUpload}
+                      className="hidden"
+                    />
                     <button
-                      onClick={handleSimulatePhotoUpload}
+                      type="button"
+                      onClick={handleTriggerFileInput}
                       className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-black shadow-md transition-all cursor-pointer"
                     >
                       {t.takePhotoBtn}

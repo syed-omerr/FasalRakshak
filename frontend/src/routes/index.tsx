@@ -901,7 +901,12 @@ function PmfbySection({
               <PmfbyClaimCard plot={selectedPlot} />
             </div>
             <div className="xl:col-span-6 space-y-8">
-              <OfficerAggregateView onAddNewPlot={onAddNewPlot} plotCount={plotCount} />
+              <OfficerAggregateView 
+                onAddNewPlot={onAddNewPlot} 
+                plotCount={plotCount} 
+                filedClaims={filedClaims}
+                onOverrideClaim={handleOverrideClaim}
+              />
               <RealTimeAlertsFeed 
                 sharedAlerts={dispatchedAlerts} 
                 onUpdateAlert={handleUpdateAlert}
