@@ -16,8 +16,7 @@ import {
   Activity,
   X,
   ShieldCheck,
-  Volume2,
-  ChevronDown
+  Volume2
 } from "lucide-react";
 
 interface KisanFarmerViewProps {
@@ -36,6 +35,168 @@ interface Message {
   lang: "TE" | "HI" | "EN";
 }
 
+const LOCALIZED_TEXT = {
+  TE: {
+    portalTitle: "ఫసల్‌రక్షక్ రైతు పోర్టల్",
+    portalSubtitle: "సులువైన పంట రక్షణ, నేల తేమ వివరాలు మరియు 1-టాప్ ఇన్సూరెన్స్ క్లెయిమ్",
+    area: "విస్తీర్ణం",
+    acres: "ఎకరాలు",
+    hectares: "హెక్టార్లు",
+    newPlot: "+ కొత్త పొలం",
+    fieldConditionTitle: "🟢 1. నా పొలం పరిస్థితి",
+    listenBtn: "వినండి",
+    soilMoistureLabel: "నేల తేమ (Soil Moisture)",
+    soilMoistureStatus: "42% (తక్కువ)",
+    soilAdvice: "భూమిలో తేమ తగ్గుతోంది. వీలైతే తేలికపాటి నీరు పారించండి.",
+    cropGreennessLabel: "పంట పచ్చదనం (Crop Greenness)",
+    cropGreennessStatus: "68% (మంచిది)",
+    cropGreennessAdvice: "శాటిలైట్ సూచిక ప్రకారం పైరు సాధారణంగా ఉంది.",
+    claimCardTitle: "⚡ 2. 1-టాప్ ఇన్సూరెన్స్ క్లెయిమ్",
+    claimCardSubtitle: "పంట నష్టం లేదా ఎండబెట్టడం జరిగితే బటన్ నొక్కి ఇన్సూరెన్స్ దరఖాస్తు చేయండి",
+    estPayout: "అంచనా పరిహారం",
+    claimFiledSuccess: "PMFBY క్లెయిమ్ నమోదు చేయబడింది",
+    claimFiledMsg: "అంచనా పంట నష్టపరిహారం: ₹{payout}. ఇన్సూరెన్స్ కంపెనీకి పంపబడింది.",
+    selectCause: "నష్టం కారణం ఎంచుకోండి:",
+    calamities: [
+      "🌵 ఎండబెట్టడం (Drought)",
+      "🌧️ అకాల వర్షాలు / వరద (Rain)",
+      "🐛 పురుగు తెగులు (Pest Attack)",
+      "⚡ సాధారణ నష్టం (General Damage)"
+    ],
+    submitClaimBtn: "⚡ ఇప్పుడే క్లెయిమ్ చేయండి (Apply 1-Tap Claim)",
+    submittingBtn: "క్లెయిమ్ పంపుతోంది...",
+    photoTitle: "📷 3. పంట ఫోటో తీయండి",
+    photoVerified: "GPS సరిచూడబడింది",
+    photoSuccess: "ఫోటో సాక్ష్యం: 98% సరిపోలింది",
+    retakePhoto: "మళ్లీ తీయండి",
+    takePhotoSub: "నష్టపోయిన పంట ఫోటో తీయండి",
+    takePhotoHint: "ఫోటో ఆధారంతో ఇన్సూరెన్స్ క్లెయిమ్ వేగంగా ఆమోదించబడుతుంది",
+    takePhotoBtn: "📷 ఫోటో తీయండి (Capture Photo)",
+    verifyingPhoto: "ఫోటో మరియు GPS వివరాలు సరిచూస్తోంది...",
+    nearbyPlotsAffected: "4 సమీప పొలాలు బాధింపబడ్డాయి",
+    cropStage: "పంట దశ",
+    gazetteNotice: "గెజిట్",
+    voiceTitle: "ఫసల్‌రక్షక్ వాయిస్ అసిస్టెంట్",
+    voicePlaceholder: "మీ ప్రశ్న ఇక్కడ టైప్ చేయండి...",
+    send: "పంపు",
+    voiceProcessing: "జవాబు విశ్లేషిస్తోంది...",
+    welcomeGreeting: "నమస్కారం! మీ పొలం నష్టం లేదా నేల తేమ వివరాల కోసం మాట్లాడండి లేదా కింద ఉన్న 1-టాప్ క్లెయిమ్ బటన్ నొక్కండి.",
+    registerPlotTitle: "పొలం నమోదు చేయండి",
+    farmerNameLabel: "రైతు పేరు",
+    phoneLabel: "ఫోన్ నంబర్",
+    villageLabel: "గ్రామం / ఊరు",
+    cropTypeLabel: "పంట రకం",
+    savePlotBtn: "నమోదు చేయండి",
+    closeBtn: "మూసివేయి"
+  },
+  HI: {
+    portalTitle: "फसलरक्षक किसान पोर्टल",
+    portalSubtitle: "सरल फसल सुरक्षा, मिट्टी की नमी की जानकारी और 1-क्लिक बीमा दावा",
+    area: "क्षेत्रफल",
+    acres: "एकड़",
+    hectares: "हेक्टेयर",
+    newPlot: "+ नया खेत जोड़ें",
+    fieldConditionTitle: "🟢 1. मेरे खेत की स्थिति",
+    listenBtn: "सुनें",
+    soilMoistureLabel: "मिट्टी की नमी (Soil Moisture)",
+    soilMoistureStatus: "42% (कम)",
+    soilAdvice: "मिट्टी में नमी कम हो रही है। यदि संभव हो तो हल्की सिंचाई करें।",
+    cropGreennessLabel: "फसल की हरियाली (Crop Greenness)",
+    cropGreennessStatus: "68% (अच्छा)",
+    cropGreennessAdvice: "सैटेलाइट सूचकांक के अनुसार फसल की स्थिति सामान्य है।",
+    claimCardTitle: "⚡ 2. 1-क्लिक बीमा दावा",
+    claimCardSubtitle: "फसल नुकसान या सूखा होने पर तुरंत बीमा आवेदन करें",
+    estPayout: "अनुमानित राशि",
+    claimFiledSuccess: "PMFBY दावा दर्ज किया गया",
+    claimFiledMsg: "अनुमानित फसल क्षतिपूर्ति: ₹{payout}। बीमा कंपनी को भेजा गया।",
+    selectCause: "नुकसान का कारण चुनें:",
+    calamities: [
+      "🌵 सूखा व नमी की कमी (Drought)",
+      "🌧️ बेमौसम बारिश / बाढ़ (Rain/Flood)",
+      "🐛 कीड़ा व रोग का प्रकोप (Pest Attack)",
+      "⚡ सामान्य फसल क्षति (General Damage)"
+    ],
+    submitClaimBtn: "⚡ अभी बीमा दावा दर्ज करें (Apply 1-Tap Claim)",
+    submittingBtn: "दावा जमा किया जा रहा है...",
+    photoTitle: "📷 3. फसल का फोटो अपलोड करें",
+    photoVerified: "GPS सत्यापित",
+    photoSuccess: "फोटो साक्ष्य: 98% मिलान",
+    retakePhoto: "पुनः फोटो लें",
+    takePhotoSub: "क्षतिग्रस्त फसल का फोटो खींचें",
+    takePhotoHint: "फोटो साक्ष्य से बीमा दावा तेजी से स्वीकृत होता है",
+    takePhotoBtn: "📷 फोटो खींचें (Capture Photo)",
+    verifyingPhoto: "फोटो और GPS विवरण सत्यापित किया जा रहा है...",
+    nearbyPlotsAffected: "4 पास के खेत प्रभावित",
+    cropStage: "फसल की अवस्था",
+    gazetteNotice: "राजपत्र अधिसूचना",
+    voiceTitle: "फसलरक्षक वॉयस असिस्टेंट",
+    voicePlaceholder: "अपना प्रश्न यहाँ टाइप करें...",
+    send: "भेजें",
+    voiceProcessing: "उत्तर का विश्लेषण किया जा रहा है...",
+    welcomeGreeting: "नमस्ते! अपने खेत की स्थिति जानने या दावा दर्ज करने के लिए बोलें या 1-क्लिक बटन दबाएं।",
+    registerPlotTitle: "खेत दर्ज करें",
+    farmerNameLabel: "किसान का नाम",
+    phoneLabel: "मोबाइल नंबर",
+    villageLabel: "गाँव / ब्लॉक",
+    cropTypeLabel: "फसल का प्रकार",
+    savePlotBtn: "दर्ज करें",
+    closeBtn: "बंद करें"
+  },
+  EN: {
+    portalTitle: "FasalRakshak Kisan Protection Portal",
+    portalSubtitle: "Precision Satellite & Soil Moisture Telemetry • 1-Tap PMFBY Insurance Claims Engine",
+    area: "Plot Acreage",
+    acres: "Acres",
+    hectares: "Hectares",
+    newPlot: "+ Register Plot",
+    fieldConditionTitle: "🟢 1. Field Health & Soil Water Status",
+    listenBtn: "Listen Audio",
+    soilMoistureLabel: "Soil Water Index (SWI)",
+    soilMoistureStatus: "42% (Moisture Stress)",
+    soilAdvice: "Soil water deficit detected. Light irrigation recommended before canopy stress increases.",
+    cropGreennessLabel: "Canopy NDVI Greenness",
+    cropGreennessStatus: "68% (Optimal)",
+    cropGreennessAdvice: "Sentinel-2 optical satellite data shows normal vegetation canopy index.",
+    claimCardTitle: "⚡ 2. 1-Tap PMFBY Insurance Claim Application",
+    claimCardSubtitle: "Apply instantly if crop yield is threatened or damaged by calamity or moisture stress.",
+    estPayout: "Estimated Compensation Payout",
+    claimFiledSuccess: "PMFBY Claim Filed & Submitted to Insurer",
+    claimFiledMsg: "Estimated payout: ₹{payout}. Evidence packet routed to insurer queue.",
+    selectCause: "Select Damage Cause / Calamity:",
+    calamities: [
+      "🌵 Drought & Moisture Stress",
+      "🌧️ Unseasonal Rain & Flood",
+      "🐛 Pest Outbreak / Blight",
+      "⚡ General Crop Damage"
+    ],
+    submitClaimBtn: "⚡ Apply 1-Tap PMFBY Claim Now",
+    submittingBtn: "Submitting claim packet to insurer...",
+    photoTitle: "📷 3. Geotagged Field Photo Evidence",
+    photoVerified: "GPS & Time Verified",
+    photoSuccess: "Ground-truth Evidence Match: 98% Corroborated",
+    retakePhoto: "Re-upload Photo",
+    takePhotoSub: "Upload Geotagged Crop Loss Photo",
+    takePhotoHint: "GPS EXIF photo evidence attaches directly to your PMFBY claim report",
+    takePhotoBtn: "📷 Capture Field Photo",
+    verifyingPhoto: "Auditing EXIF GPS coordinates and damage score...",
+    nearbyPlotsAffected: "4 Nearby Plots Affected",
+    cropStage: "Crop Stage",
+    gazetteNotice: "Govt Gazette",
+    voiceTitle: "FasalRakshak Voice AI Assistant",
+    voicePlaceholder: "Type your query or talk...",
+    send: "Send",
+    voiceProcessing: "Google AI analyzing query...",
+    welcomeGreeting: "Welcome! Speak or type to query plot health or submit your 1-Tap PMFBY claim.",
+    registerPlotTitle: "Register New Plot",
+    farmerNameLabel: "Farmer Name",
+    phoneLabel: "Mobile Number",
+    villageLabel: "Village / Mandal",
+    cropTypeLabel: "Crop Type",
+    savePlotBtn: "Save Plot",
+    closeBtn: "Close"
+  }
+};
+
 export function KisanFarmerView({
   plots,
   onAddNewPlot,
@@ -44,37 +205,43 @@ export function KisanFarmerView({
   onAddClaim,
   filedClaims
 }: KisanFarmerViewProps) {
-  // Simple Onboarding state
+  // Onboarding state
   const [farmerName, setFarmerName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [villageName, setVillageName] = useState("Warangal");
   const [cropType, setCropType] = useState("Cotton");
   const [isOnboarding, setIsOnboarding] = useState(!selectedPlot);
 
-  // Simple Language & Voice states
+  // Language & Voice states
   const [language, setLanguage] = useState<"TE" | "HI" | "EN">("TE");
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [voiceQuery, setVoiceQuery] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const t = LOCALIZED_TEXT[language];
+
   const [dialogue, setDialogue] = useState<Message[]>([
     {
       sender: "assistant",
-      text: "నమస్కారం! మీ పొలం నష్టం లేదా నేల తేమ వివరాల కోసం మాట్లాడండి లేదా కింద ఉన్న 1-టాప్ క్లెయిమ్ బటన్ నొక్కండి.",
-      translated: "Namaskaram! Talk to check field health or tap the 1-Click claim button below.",
+      text: t.welcomeGreeting,
+      translated: LOCALIZED_TEXT.EN.welcomeGreeting,
       lang: "TE"
     }
   ]);
 
-  // Geotagged Photo Upload states
+  // Photo & Claim states
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
   const [photoVerifying, setPhotoVerifying] = useState(false);
-
-  // 1-Click Claim states
-  const [selectedCalamity, setSelectedCalamity] = useState("🌵 ఎండబెట్టడం (Drought)");
+  const [selectedCalamity, setSelectedCalamity] = useState(t.calamities[0]);
   const [isFilingClaim, setIsFilingClaim] = useState(false);
   const [claimSuccessMessage, setClaimSuccessMessage] = useState<string | null>(null);
 
   const dialogueEndRef = useRef<HTMLDivElement>(null);
+
+  // Update calamity default when language switches
+  useEffect(() => {
+    setSelectedCalamity(LOCALIZED_TEXT[language].calamities[0]);
+  }, [language]);
 
   useEffect(() => {
     if (showVoiceModal) {
@@ -108,6 +275,10 @@ export function KisanFarmerView({
       ndvi_mean: 0.68,
       swi_mean: 0.42,
       swi_trend_7d: -0.06,
+      sowing_date: "2026-06-15",
+      crop_stage: "Flowering & Grain Filling",
+      cluster_plots_affected: 4,
+      disaster_gazette_id: "TS-GAZETTE-2026-WARANGAL-042",
       health_status: "STRESSED",
       center: [17.9784, 79.5941],
       polygon: [
@@ -122,12 +293,14 @@ export function KisanFarmerView({
     onSelectPlot(newPlot);
     setIsOnboarding(false);
 
-    const msgTe = `స్వాగతం ${farmerName} గారూ! మీ ${cropType} పొలం ఫసల్‌రక్షక్‌లో నమోదైంది.`;
-    const msgEn = `Welcome ${farmerName}! Your ${cropType} plot is onboarded.`;
-    const text = language === "TE" ? msgTe : msgEn;
-    
-    setDialogue([{ sender: "assistant", text, translated: msgEn, lang: language }]);
-    speakText(text, language);
+    const speech = language === "TE"
+      ? `స్వాగతం ${farmerName} గారూ! మీ ${cropType} పొలం ఫసల్‌రక్షక్‌లో నమోదైంది.`
+      : language === "HI"
+      ? `स्वागत है ${farmerName} जी! आपका ${cropType} खेत पंजीकृत हो गया है।`
+      : `Welcome ${farmerName}! Your ${cropType} plot is registered.`;
+
+    setDialogue([{ sender: "assistant", text: speech, translated: LOCALIZED_TEXT.EN.welcomeGreeting, lang: language }]);
+    speakText(speech, language);
   };
 
   const handleOneClickClaimSubmit = async (calamityType?: string) => {
@@ -176,13 +349,14 @@ export function KisanFarmerView({
     onAddClaim(claimRecord);
     setIsFilingClaim(false);
 
-    const msgTe = `ధన్యవాదాలు ${selectedPlot.farmer} గారూ! మీ PMFBY పంట క్లెయిమ్ సమర్పించబడింది. రిఫరెన్స్ ఐడీ: ${ackId}. అంచనా పరిహారం: ₹${estPayout.toLocaleString()}.`;
-    const msgEn = `Thank you ${selectedPlot.farmer}! Claim submitted. Reference ID: ${ackId}. Estimated Payout: ₹${estPayout.toLocaleString()}.`;
+    const speechText = language === "TE"
+      ? `ధన్యవాదాలు ${selectedPlot.farmer} గారూ! మీ PMFBY పంట క్లెయిమ్ సమర్పించబడింది. ఐడీ: ${ackId}. అంచనా పరిహారం: ₹${estPayout.toLocaleString()}.`
+      : language === "HI"
+      ? `धन्यवाद ${selectedPlot.farmer} जी! आपका बीमा दावा जमा कर दिया गया है। संदर्भ संख्या: ${ackId}। अनुमानित राशि: ₹${estPayout.toLocaleString()}।`
+      : `Thank you ${selectedPlot.farmer}! Your PMFBY claim has been filed. Ack ID: ${ackId}. Estimated payout: ₹${estPayout.toLocaleString()}.`;
 
-    const speechText = language === "TE" ? msgTe : msgEn;
-    setClaimSuccessMessage(`✅ క్లెయిమ్ నమోదైంది! ID: ${ackId} • పరిహారం: ₹${estPayout.toLocaleString()}`);
-
-    setDialogue((prev) => [...prev, { sender: "assistant", text: speechText, translated: msgEn, lang: language }]);
+    setClaimSuccessMessage(`✅ ${t.claimFiledSuccess}! ID: ${ackId} • ₹${estPayout.toLocaleString()}`);
+    setDialogue((prev) => [...prev, { sender: "assistant", text: speechText, translated: LOCALIZED_TEXT.EN.welcomeGreeting, lang: language }]);
     speakText(speechText, language);
   };
 
@@ -206,7 +380,7 @@ export function KisanFarmerView({
         language: language
       });
 
-      const botText = parsed.text_response || "నమస్కారం! మీ ప్రశ్నను పరిశీలిస్తున్నాము.";
+      const botText = parsed.text_response || t.welcomeGreeting;
       setDialogue((prev) => [...prev, { sender: "assistant", text: botText, translated: parsed.translated_text, lang: language }]);
       speakText(botText, language);
     } catch (e) {
@@ -222,10 +396,8 @@ export function KisanFarmerView({
     setTimeout(() => {
       setPhotoVerifying(false);
       setUploadedPhoto("https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=300&q=80");
-      const msgTe = "ఫోటో సరిచూడబడింది! GPS మరియు EXIF డేటా ద్వారా 98% క్లెయిమ్ ఆధారాలు ధృవీకరించబడ్డాయి.";
-      const msgEn = "Photo verified! GPS and damage evidence corroboration score 98%.";
-      const speech = language === "TE" ? msgTe : msgEn;
-      setDialogue((prev) => [...prev, { sender: "assistant", text: speech, translated: msgEn, lang: language }]);
+      const speech = t.photoSuccess;
+      setDialogue((prev) => [...prev, { sender: "assistant", text: speech, translated: LOCALIZED_TEXT.EN.photoSuccess, lang: language }]);
       speakText(speech, language);
     }, 1500);
   };
@@ -236,19 +408,19 @@ export function KisanFarmerView({
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 text-foreground pb-28">
       
       {/* ========================================================================= */}
-      {/* TOP HEADER & SIMPLE VERNACULAR LANGUAGE SWITCHER                          */}
+      {/* TOP HEADER & FULLY DYNAMIC VERNACULAR LANGUAGE SWITCHER                    */}
       {/* ========================================================================= */}
       <div className="bg-card border border-border rounded-2xl p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-black text-foreground flex items-center gap-2">
-            🌾 ఫసల్‌రక్షక్ రైతు పోర్టల్ <span className="text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">Kisan Portal</span>
+            🌾 {t.portalTitle} <span className="text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">Kisan Portal</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            సులువైన పంట రక్షణ, నేల తేమ వివరాలు మరియు 1-టాప్ ఇన్సూరెన్స్ క్లెయిమ్
+            {t.portalSubtitle}
           </p>
         </div>
 
-        {/* Big Vernacular Language Switch Buttons */}
+        {/* Dynamic Vernacular Language Switch Buttons */}
         <div className="flex items-center gap-1.5 bg-soil p-1.5 rounded-xl border border-border">
           <button
             onClick={() => setLanguage("TE")}
@@ -292,7 +464,7 @@ export function KisanFarmerView({
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                విస్తీర్ణం: <strong>{selectedPlot.acreage} హెక్టార్లు ({(selectedPlot.acreage * 2.471).toFixed(1)} ఎకరాలు)</strong>
+                {t.area}: <strong>{selectedPlot.acreage} {t.hectares} ({(selectedPlot.acreage * 2.471).toFixed(1)} {t.acres})</strong>
               </p>
             </div>
           </div>
@@ -314,7 +486,7 @@ export function KisanFarmerView({
               onClick={() => setIsOnboarding(true)}
               className="px-3 py-2 rounded-xl bg-soil hover:bg-secondary border border-border text-xs font-bold text-foreground cursor-pointer"
             >
-              + కొత్త పొలం
+              {t.newPlot}
             </button>
           </div>
         </div>
@@ -325,22 +497,22 @@ export function KisanFarmerView({
         <div className="bg-card border border-primary/40 rounded-2xl p-6 shadow-2xl space-y-4">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-              <MapPin className="size-5 text-primary" /> పొలం నమోదు చేయండి (Register Plot)
+              <MapPin className="size-5 text-primary" /> {t.registerPlotTitle}
             </h3>
             {selectedPlot && (
               <button onClick={() => setIsOnboarding(false)} className="text-xs text-muted-foreground hover:text-foreground">
-                ✕ మూసివేయి
+                ✕ {t.closeBtn}
               </button>
             )}
           </div>
 
           <form onSubmit={handleRegisterSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
-              <label className="block text-muted-foreground font-bold mb-1">రైతు పేరు (Farmer Name)</label>
+              <label className="block text-muted-foreground font-bold mb-1">{t.farmerNameLabel}</label>
               <input
                 type="text"
                 required
-                placeholder="ఉదా: రమేష్ రెడ్డి"
+                placeholder="Ramesh Reddy"
                 value={farmerName}
                 onChange={(e) => setFarmerName(e.target.value)}
                 className="w-full bg-soil border border-border rounded-xl px-3.5 py-2.5 text-foreground text-sm focus:outline-none focus:border-primary"
@@ -348,11 +520,11 @@ export function KisanFarmerView({
             </div>
 
             <div>
-              <label className="block text-muted-foreground font-bold mb-1">ఫోన్ నంబర్ (Mobile Number)</label>
+              <label className="block text-muted-foreground font-bold mb-1">{t.phoneLabel}</label>
               <input
                 type="tel"
                 required
-                placeholder="ఉదా: +91 98480 22339"
+                placeholder="+91 98480 22339"
                 value={mobileNumber}
                 onChange={(e) => setMobileNumber(e.target.value)}
                 className="w-full bg-soil border border-border rounded-xl px-3.5 py-2.5 text-foreground text-sm focus:outline-none focus:border-primary"
@@ -360,11 +532,11 @@ export function KisanFarmerView({
             </div>
 
             <div>
-              <label className="block text-muted-foreground font-bold mb-1">గ్రామం / ఊరు (Village)</label>
+              <label className="block text-muted-foreground font-bold mb-1">{t.villageLabel}</label>
               <input
                 type="text"
                 required
-                placeholder="ఉదా: వరంగల్"
+                placeholder="Warangal"
                 value={villageName}
                 onChange={(e) => setVillageName(e.target.value)}
                 className="w-full bg-soil border border-border rounded-xl px-3.5 py-2.5 text-foreground text-sm focus:outline-none focus:border-primary"
@@ -372,18 +544,18 @@ export function KisanFarmerView({
             </div>
 
             <div>
-              <label className="block text-muted-foreground font-bold mb-1">పంట రకం (Crop Type)</label>
+              <label className="block text-muted-foreground font-bold mb-1">{t.cropTypeLabel}</label>
               <select
                 value={cropType}
                 onChange={(e) => setCropType(e.target.value)}
                 className="w-full bg-soil border border-border rounded-xl px-3.5 py-2.5 text-foreground text-sm focus:outline-none focus:border-primary cursor-pointer"
               >
-                <option value="Cotton">ప్రత్తి (Cotton)</option>
-                <option value="Groundnut">వేరుశనగ (Groundnut)</option>
-                <option value="Maize">మొక్కజొన్న (Maize)</option>
-                <option value="Tomato">టమాటా (Tomato)</option>
-                <option value="Rice/Paddy">వరి (Paddy/Rice)</option>
-                <option value="Chilli">మిరప (Chilli)</option>
+                <option value="Cotton">Cotton (ప్రత్తి / कपास)</option>
+                <option value="Groundnut">Groundnut (వేరుశనగ / मूंगफली)</option>
+                <option value="Maize">Maize (మొక్కజొన్న / मक्का)</option>
+                <option value="Tomato">Tomato (టమాటా / टमाटर)</option>
+                <option value="Rice/Paddy">Rice (వరి / चावल)</option>
+                <option value="Chilli">Chilli (మిరప / मिर्च)</option>
               </select>
             </div>
 
@@ -392,7 +564,7 @@ export function KisanFarmerView({
                 type="submit"
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-primary text-primary-foreground font-black text-sm hover:bg-primary/95 transition-all cursor-pointer shadow-lg"
               >
-                నమోదు చేయండి (Save Plot)
+                {t.savePlotBtn}
               </button>
             </div>
           </form>
@@ -400,46 +572,41 @@ export function KisanFarmerView({
       )}
 
       {/* ========================================================================= */}
-      {/* 3 SIMPLE & ULTRA-INTUITIVE FARMER CARDS                                   */}
+      {/* DYNAMIC LOCALIZED FARMER CARDS                                            */}
       {/* ========================================================================= */}
       {selectedPlot && (
         <div className="space-y-6">
           
-          {/* CARD 1: 🟢 నా పొలం పరిస్థితి (MY FIELD CONDITION) */}
+          {/* CARD 1: FIELD CONDITION */}
           <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-lg">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-lg font-black text-foreground flex items-center gap-2">
-                🟢 1. నా పొలం పరిస్థితి (Field Condition)
+                {t.fieldConditionTitle}
               </h3>
               <button
                 onClick={() => {
-                  const speech = language === "TE"
-                    ? `మీ పొలంలో నేల తేమ శాతం 42 గా ఉంది. నీటి ఎద్దడి వల్ల తేలికపాటి తడి అందించాలి.`
-                    : `Soil moisture is at 42%. Light irrigation recommended.`;
-                  speakText(speech, language);
+                  speakText(t.soilAdvice, language);
                 }}
                 className="p-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-primary/30"
               >
-                <Volume2 className="size-4" /> వినండి (Listen)
+                <Volume2 className="size-4" /> {t.listenBtn}
               </button>
             </div>
 
-            {/* Simple Status Badges */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Soil Water Gauge */}
               <div className="bg-soil/80 border border-cyan-500/30 rounded-2xl p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-cyan-400 flex items-center gap-1.5">
-                    <Droplets className="size-4" /> నేల తేమ (Soil Moisture)
+                    <Droplets className="size-4" /> {t.soilMoistureLabel}
                   </span>
-                  <span className="text-base font-black text-cyan-300">42% (తక్కువ)</span>
+                  <span className="text-base font-black text-cyan-300">{t.soilMoistureStatus}</span>
                 </div>
-                {/* Visual Progress Bar */}
                 <div className="w-full h-3 bg-background rounded-full overflow-hidden border border-cyan-500/30 p-0.5">
                   <div className="h-full bg-cyan-400 rounded-full w-[42%]" />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  భూమిలో తేమ తగ్గుతోంది. వీలైతే తేలికపాటి నీరు పారించండి.
+                  {t.soilAdvice}
                 </p>
               </div>
 
@@ -447,67 +614,60 @@ export function KisanFarmerView({
               <div className="bg-soil/80 border border-emerald-500/30 rounded-2xl p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
-                    <Activity className="size-4" /> పంట పచ్చదనం (Crop Greenness)
+                    <Activity className="size-4" /> {t.cropGreennessLabel}
                   </span>
-                  <span className="text-base font-black text-emerald-300">68% (మంచిది)</span>
+                  <span className="text-base font-black text-emerald-300">{t.cropGreennessStatus}</span>
                 </div>
-                {/* Visual Progress Bar */}
                 <div className="w-full h-3 bg-background rounded-full overflow-hidden border border-emerald-500/30 p-0.5">
                   <div className="h-full bg-emerald-400 rounded-full w-[68%]" />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  శాటిలైట్ సూచిక ప్రకారం పైరు సాధారణంగా ఉంది.
+                  {t.cropGreennessAdvice}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* CARD 2: ⚡ 1-టాప్ ఇన్సూరెన్స్ క్లెయిమ్ (1-TAP PMFBY CLAIM) */}
+          {/* CARD 2: 1-TAP INSURANCE CLAIM */}
           <div className="bg-card border-2 border-emerald-500/40 rounded-2xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div>
                 <h3 className="text-lg font-black text-foreground flex items-center gap-2">
-                  ⚡ 2. 1-టాప్ ఇన్సూరెన్స్ క్లెయిమ్ (Instant Insurance Claim)
+                  {t.claimCardTitle}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
                   <span className="text-[10px] font-bold bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded-md">
-                    📍 4 సమీప పొలాలు బాధింపబడ్డాయి (4 Nearby Plots Affected)
+                    📍 {t.nearbyPlotsAffected}
                   </span>
                   <span className="text-[10px] font-bold bg-soil text-muted-foreground border border-border px-2 py-0.5 rounded-md">
-                    🌾 పంట దశ: {selectedPlot.crop_stage || "పూత & గింజ దశ (Flowering)"}
+                    🌾 {t.cropStage}: {selectedPlot.crop_stage || "Flowering & Grain Filling"}
                   </span>
                   <span className="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md">
-                    📜 గెజిట్: {selectedPlot.disaster_gazette_id || "TS-GAZETTE-2026-042"}
+                    📜 {t.gazetteNotice}: {selectedPlot.disaster_gazette_id || "TS-GAZETTE-2026-042"}
                   </span>
                 </div>
               </div>
               <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full shrink-0">
-                అంచనా పరిహారం: ₹{Math.round(selectedPlot.acreage * 22000).toLocaleString()}
+                {t.estPayout}: ₹{Math.round(selectedPlot.acreage * 22000).toLocaleString()}
               </span>
             </div>
 
             {currentClaim ? (
               <div className="bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-5 space-y-2">
                 <div className="flex items-center justify-between text-sm font-black text-emerald-400">
-                  <span className="flex items-center gap-2"><CheckCircle className="size-5" /> PMFBY క్లెయిమ్ నమోదు చేయబడింది</span>
+                  <span className="flex items-center gap-2"><CheckCircle className="size-5" /> {t.claimFiledSuccess}</span>
                   <span className="bg-emerald-500/20 px-3 py-1 rounded text-xs">{currentClaim.acknowledgment_id}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  అంచనా పంట నష్టపరిహారం: <strong className="text-foreground font-black">₹{currentClaim.estimated_payout.toLocaleString()}</strong>. ఇన్సూరెన్స్ కంపెనీకి పంపబడింది.
+                  {t.claimFiledMsg.replace("{payout}", currentClaim.estimated_payout.toLocaleString())}
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Damage Cause Buttons */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-muted-foreground">నష్టం కారణం ఎంచుకోండి (Select Cause):</label>
+                  <label className="block text-xs font-bold text-muted-foreground">{t.selectCause}</label>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    {[
-                      "🌵 ఎండబెట్టడం (Drought)",
-                      "🌧️ అకాల వర్షాలు / వరద (Rain)",
-                      "🐛 పురుగు తెగులు (Pest Attack)",
-                      "⚡ సాధారణ నష్టం (General Damage)"
-                    ].map((type) => (
+                    {t.calamities.map((type) => (
                       <button
                         key={type}
                         type="button"
@@ -524,7 +684,6 @@ export function KisanFarmerView({
                   </div>
                 </div>
 
-                {/* GIANT 1-CLICK ACTION BUTTON FOR FARMER */}
                 <button
                   type="button"
                   onClick={() => handleOneClickClaimSubmit(selectedCalamity)}
@@ -534,12 +693,12 @@ export function KisanFarmerView({
                   {isFilingClaim ? (
                     <>
                       <Loader2 className="size-6 animate-spin" />
-                      <span>క్లెయిమ్ పంపుతోంది...</span>
+                      <span>{t.submittingBtn}</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="size-6 text-amber-300 animate-pulse" />
-                      <span>⚡ ఇప్పుడే క్లెయిమ్ చేయండి (Apply 1-Tap Claim Now)</span>
+                      <span>{t.submitClaimBtn}</span>
                       <ArrowRight className="size-6" />
                     </>
                   )}
@@ -554,13 +713,13 @@ export function KisanFarmerView({
             )}
           </div>
 
-          {/* CARD 3: 📷 పంట ఫోటో తీయండి (TAKE CROP LOSS PHOTO) */}
+          {/* CARD 3: TAKE CROP PHOTO */}
           <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-lg">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-lg font-black text-foreground flex items-center gap-2">
-                📷 3. పంట ఫోటో తీయండి (Upload Crop Photo)
+                {t.photoTitle}
               </h3>
-              <span className="text-xs text-muted-foreground font-semibold">GPS Verified</span>
+              <span className="text-xs text-muted-foreground font-semibold">{t.photoVerified}</span>
             </div>
 
             {uploadedPhoto && uploadedPhoto !== "uploading" ? (
@@ -568,13 +727,13 @@ export function KisanFarmerView({
                 <div className="relative rounded-xl overflow-hidden border border-emerald-500/40 max-h-48">
                   <img src={uploadedPhoto} alt="Crop photo" className="w-full h-full object-cover" />
                   <div className="absolute top-2 right-2 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded flex items-center gap-1 shadow">
-                    <CheckCircle className="size-4" /> GPS సరిచూడబడింది
+                    <CheckCircle className="size-4" /> {t.photoVerified}
                   </div>
                 </div>
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-xs text-emerald-300 flex items-center justify-between">
-                  <span>ఫోటో సాక్ష్యం: <strong>98% సరిపోలింది</strong></span>
+                  <span>{t.photoSuccess}</span>
                   <button onClick={() => setUploadedPhoto(null)} className="text-xs text-muted-foreground underline hover:text-foreground">
-                    మళ్లీ తీయండి
+                    {t.retakePhoto}
                   </button>
                 </div>
               </div>
@@ -583,7 +742,7 @@ export function KisanFarmerView({
                 {photoVerifying ? (
                   <div className="py-4 space-y-2">
                     <Loader2 className="size-8 text-primary animate-spin mx-auto" />
-                    <p className="text-xs font-bold text-foreground">ఫోటో మరియు GPS వివరాలు సరిచూస్తోంది...</p>
+                    <p className="text-xs font-bold text-foreground">{t.verifyingPhoto}</p>
                   </div>
                 ) : (
                   <>
@@ -591,14 +750,14 @@ export function KisanFarmerView({
                       <Camera className="size-7" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-foreground">నష్టపోయిన పంట ఫోటో తీయండి</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">ఫోటో ఆధారంతో ఇన్సూరెన్స్ క్లెయిమ్ వేగంగా ఆమోదించబడుతుంది</p>
+                      <p className="text-sm font-bold text-foreground">{t.takePhotoSub}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t.takePhotoHint}</p>
                     </div>
                     <button
                       onClick={handleSimulatePhotoUpload}
                       className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-black shadow-md transition-all cursor-pointer"
                     >
-                      📷 ఫోటో తీయండి (Capture Photo)
+                      {t.takePhotoBtn}
                     </button>
                   </>
                 )}
@@ -616,7 +775,7 @@ export function KisanFarmerView({
           type="button"
           onClick={() => setShowVoiceModal(!showVoiceModal)}
           className="size-14 rounded-full bg-primary hover:bg-primary/95 text-primary-foreground shadow-2xl flex items-center justify-center cursor-pointer transition-all border-2 border-primary/50 hover:scale-105 active:scale-95"
-          title="వాయిస్ అసిస్టెంట్ (Voice Assistant)"
+          title={t.voiceTitle}
         >
           <Mic className="size-7 animate-pulse" />
           <span className="absolute -top-1 -right-1 size-3 rounded-full bg-emerald-400 animate-ping" />
@@ -629,7 +788,7 @@ export function KisanFarmerView({
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div className="flex items-center gap-2">
               <Mic className="size-5 text-primary animate-pulse" />
-              <h4 className="font-bold text-sm text-foreground">ఫసల్‌రక్షక్ వాయిస్ అసిస్టెంట్</h4>
+              <h4 className="font-bold text-sm text-foreground">{t.voiceTitle}</h4>
             </div>
             <button onClick={() => setShowVoiceModal(false)} className="text-muted-foreground hover:text-foreground font-bold text-xs">
               <X className="size-5" />
@@ -647,7 +806,7 @@ export function KisanFarmerView({
             {isProcessing && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
                 <Loader2 className="size-3.5 text-primary animate-spin" />
-                <span>జవాబు విశ్లేషిస్తోంది...</span>
+                <span>{t.voiceProcessing}</span>
               </div>
             )}
             <div ref={dialogueEndRef} />
@@ -662,7 +821,7 @@ export function KisanFarmerView({
           >
             <input
               type="text"
-              placeholder="మీ ప్రశ్న ఇక్కడ టైప్ చేయండి..."
+              placeholder={t.voicePlaceholder}
               value={voiceQuery}
               onChange={(e) => setVoiceQuery(e.target.value)}
               className="flex-1 bg-soil border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
@@ -672,7 +831,7 @@ export function KisanFarmerView({
               disabled={!voiceQuery.trim()}
               className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs cursor-pointer disabled:opacity-50"
             >
-              పంపు
+              {t.send}
             </button>
           </form>
         </div>
