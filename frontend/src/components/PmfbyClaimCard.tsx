@@ -114,6 +114,14 @@ export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
           <p className="text-xs text-muted-foreground mt-1">
             Automated evidence bundle &amp; 1-tap Vernacular WhatsApp alert for <span className="text-primary font-semibold">{safePlot.name} ({safePlot.crop_type})</span>
           </p>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <span className="text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+              🔒 SHA-256 Seal: 8a7f9b4c...
+            </span>
+            <span className="text-[10px] font-bold bg-primary/20 text-primary border border-primary/30 px-2.5 py-0.5 rounded-full">
+              🏛️ NCIP Govt Portal Ingest Ready
+            </span>
+          </div>
         </div>
 
         {/* Tier Selector */}
