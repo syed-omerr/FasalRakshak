@@ -41,13 +41,19 @@ interface OfficerAggregateViewProps {
   plotCount: number;
   filedClaims: any[];
   onOverrideClaim: (ackId: string, action: string) => void;
+  plots?: FarmPlot[];
+  onSelectPlot?: (plot: FarmPlot) => void;
+  setProductView?: (view: "kisan" | "enterprise") => void;
 }
 
 export function OfficerAggregateView({ 
   onAddNewPlot, 
   plotCount, 
   filedClaims = [], 
-  onOverrideClaim 
+  onOverrideClaim,
+  plots = [],
+  onSelectPlot,
+  setProductView
 }: OfficerAggregateViewProps) {
   const [data, setData] = useState<AggregateRiskData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -363,6 +369,22 @@ export function OfficerAggregateView({
                     </td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {onSelectPlot && setProductView && (
+                          <button
+                            onClick={() => {
+                              const farmerPlot = plots.find((p) => p.farmer === farmer.name) || plots[0];
+                              if (farmerPlot) {
+                                onSelectPlot(farmerPlot);
+                                setProductView("kisan");
+                              }
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-sm hover:bg-primary/90"
+                            title="Monitor & inspect this farmer's dashboard"
+                          >
+                            <span>👁️ Monitor</span>
+                          </button>
+                        )}
+
                         <button
                           onClick={() => handleSendWhatsAppToFarmer(farmer)}
                           disabled={sendingWa === farmer.phone}

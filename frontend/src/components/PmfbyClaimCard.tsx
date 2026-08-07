@@ -19,6 +19,24 @@ interface PmfbyClaimCardProps {
 }
 
 export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
+  const safePlot: FarmPlot = plot || {
+    id: "plot-101",
+    name: "Ramesh's Groundnut Field",
+    crop_type: "Groundnut",
+    farmer: "Ramesh Reddy",
+    location: "Warangal West Block, Telangana",
+    acreage: 2.4,
+    ndvi_mean: 0.74,
+    health_status: "HEALTHY",
+    center: [17.9784, 79.5941],
+    polygon: [
+      [17.9796, 79.5926],
+      [17.9802, 79.5956],
+      [17.9772, 79.5959],
+      [17.9766, 79.5929],
+    ]
+  };
+
   const [hasPhoto, setHasPhoto] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [claimResponse, setClaimResponse] = useState<any>(null);
@@ -26,7 +44,7 @@ export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
   const [language, setLanguage] = useState<"TELUGU" | "ENGLISH">("TELUGU");
 
   // Compute 2-of-3 signal agreement
-  const ndviSignal = plot.health_status === "STRESSED" || plot.health_status === "MODERATE";
+  const ndviSignal = safePlot.health_status === "STRESSED" || safePlot.health_status === "MODERATE";
   const weatherSignal = true; // 42% rainfall deficit simulated
   const photoSignal = hasPhoto;
   const agreeingSignals = [ndviSignal, weatherSignal, photoSignal].filter(Boolean).length;
@@ -35,13 +53,14 @@ export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
   const handleSubmitClaim = async () => {
     try {
       setSubmitting(true);
+      const farmerName = safePlot.farmer || "Ramesh Reddy";
       const res = await fetch("http://localhost:8000/api/pmfby/submit-claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          farmer_id: `FARMER-${plot.farmer.replace(/\s+/g, "-").toUpperCase()}`,
-          plot_id: plot.id,
-          crop_type: plot.crop_type,
+          farmer_id: `FARMER-${farmerName.replace(/\s+/g, "-").toUpperCase()}`,
+          plot_id: safePlot.id,
+          crop_type: safePlot.crop_type,
           damage_score: 0.72,
           confidence_pct: confidenceScore,
           signals_used: [
@@ -50,7 +69,7 @@ export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
             hasPhoto ? "Geotagged ground photo" : "Weather anomaly sync",
           ],
           ndvi_before: 0.74,
-          ndvi_after: plot.ndvi_mean,
+          ndvi_after: safePlot.ndvi_mean,
           rainfall_deficit_pct: 42.0,
           consent_channel: "WhatsApp Quick Reply Button",
         }),
@@ -63,8 +82,8 @@ export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
         setClaimResponse({
           acknowledgment_id: `PMFBY-TEL-2026-${Math.floor(10000 + Math.random() * 90000)}`,
           submitted_at: new Date().toLocaleString(),
-          message_telugu: `మీ పొలం (${plot.id}) PMFBY క్లెయిమ్ విజ‌య‌వంతంగా న‌మోదైంది.`,
-          message_english: `Your PMFBY crop loss claim for plot (${plot.id}) has been successfully submitted within 72h window.`,
+          message_telugu: `మీ పొలం (${safePlot.id}) PMFBY క్లెయిమ్ విజ‌య‌వంతంగా న‌మోదైంది.`,
+          message_english: `Your PMFBY crop loss claim for plot (${safePlot.id}) has been successfully submitted within 72h window.`,
           explainability_note: `Satellite green canopy health dropped by 18% and rainfall was 42% below average. 2 of 3 signals confirmed threshold breach.`,
         });
       }
@@ -72,8 +91,8 @@ export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
       setClaimResponse({
         acknowledgment_id: `PMFBY-TEL-2026-${Math.floor(10000 + Math.random() * 90000)}`,
         submitted_at: new Date().toLocaleString(),
-        message_telugu: `మీ పొలం (${plot.id}) PMFBY క్లెయిమ్ విజ‌య‌వంతంగా న‌మోదైంది.`,
-        message_english: `Your PMFBY crop loss claim for plot (${plot.id}) has been successfully submitted within 72h window.`,
+        message_telugu: `మీ పొలం (${safePlot.id}) PMFBY క్లెయిమ్ విజ‌య‌వంతంగా న‌మోదైంది.`,
+        message_english: `Your PMFBY crop loss claim for plot (${safePlot.id}) has been successfully submitted within 72h window.`,
         explainability_note: `Satellite green canopy health dropped by 18% and rainfall was 42% below average. 2 of 3 signals confirmed threshold breach.`,
       });
     } finally {
@@ -93,7 +112,7 @@ export function PmfbyClaimCard({ plot }: PmfbyClaimCardProps) {
             </h3>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Automated evidence bundle &amp; 1-tap Vernacular WhatsApp alert for <span className="text-primary font-semibold">{plot.name} ({plot.crop_type})</span>
+            Automated evidence bundle &amp; 1-tap Vernacular WhatsApp alert for <span className="text-primary font-semibold">{safePlot.name} ({safePlot.crop_type})</span>
           </p>
         </div>
 

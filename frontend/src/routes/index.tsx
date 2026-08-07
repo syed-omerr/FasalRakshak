@@ -476,6 +476,9 @@ function Index() {
                   handleUpdateAlert={handleUpdateAlert}
                   filedClaims={filedClaims}
                   handleOverrideClaim={handleOverrideClaim}
+                  plots={plotList}
+                  onSelectPlot={setSelectedPlot}
+                  setProductView={setProductView}
                 />
               </div>
             )}
@@ -910,7 +913,10 @@ function PmfbySection({
   dispatchedAlerts,
   handleUpdateAlert,
   filedClaims,
-  handleOverrideClaim
+  handleOverrideClaim,
+  plots = [],
+  onSelectPlot,
+  setProductView
 }: { 
   selectedPlot: FarmPlot; 
   onAddNewPlot: (plot: FarmPlot) => void;
@@ -919,8 +925,12 @@ function PmfbySection({
   handleUpdateAlert: (id: string, updatedFields: Partial<AlertLogItem>) => void;
   filedClaims: any[];
   handleOverrideClaim: (ackId: string, action: string) => void;
+  plots?: FarmPlot[];
+  onSelectPlot?: (plot: FarmPlot) => void;
+  setProductView?: (view: "kisan" | "enterprise") => void;
 }) {
   const [activeSubTab, setActiveSubTab] = useState<"queue" | "generator" | "alerts">("queue");
+  const safePlot = selectedPlot || plots[0];
 
   return (
     <section id="pmfby" className="py-20 md:py-28 border-b border-border bg-soil/60">
@@ -982,13 +992,16 @@ function PmfbySection({
                   plotCount={plotCount} 
                   filedClaims={filedClaims}
                   onOverrideClaim={handleOverrideClaim}
+                  plots={plots}
+                  onSelectPlot={onSelectPlot}
+                  setProductView={setProductView}
                 />
               </div>
             )}
 
             {activeSubTab === "generator" && (
               <div className="animate-fade-in max-w-4xl mx-auto">
-                <PmfbyClaimCard plot={selectedPlot} />
+                <PmfbyClaimCard plot={safePlot} />
               </div>
             )}
 
