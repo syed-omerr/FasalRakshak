@@ -404,7 +404,11 @@ function Index() {
         setActiveTab={setActiveTab} 
         productView={productView}
         setProductView={setProductView}
-        onLogout={() => setAuthSession(null)}
+        authSession={authSession}
+        onLogout={() => {
+          clearSessionStorage();
+          setAuthSession(null);
+        }}
       />
       
       <div className="flex-1 pt-12">
@@ -483,6 +487,7 @@ function Nav({
   setActiveTab,
   productView,
   setProductView,
+  authSession,
   onLogout
 }: {
   language: "EN" | "HI" | "TE";
@@ -491,6 +496,7 @@ function Nav({
   setActiveTab: (tab: "satellite" | "pmfby" | "mandi" | "onboarding") => void;
   productView: "kisan" | "enterprise";
   setProductView: (view: "kisan" | "enterprise") => void;
+  authSession: any;
   onLogout: () => void;
 }) {
   return (
@@ -524,32 +530,11 @@ function Nav({
           </nav>
         )}
 
-        <div className="flex items-center gap-4">
-          {/* FasalRakshak v3.0 Product View Switcher Toggle */}
-          <div className="flex items-center gap-1 bg-card border border-border rounded-full p-1 text-[11px]">
-            <button
-              onClick={() => {
-                setProductView("enterprise");
-                setActiveTab("onboarding");
-              }}
-              className={`rounded-full px-3 py-1 font-bold transition-all cursor-pointer ${
-                productView === "enterprise"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              💼 Enterprise
-            </button>
-            <button
-              onClick={() => setProductView("kisan")}
-              className={`rounded-full px-3 py-1 font-bold transition-all cursor-pointer ${
-                productView === "kisan"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              🌾 Kisan
-            </button>
+        <div className="flex items-center gap-3">
+          {/* Authenticated User Profile Badge */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-soil border border-border text-xs font-bold text-foreground">
+            <span>{productView === "kisan" ? "🌾" : "💼"}</span>
+            <span>{authSession?.name || (productView === "kisan" ? "Kisan Farmer" : "Admin Officer")}</span>
           </div>
 
           {productView === "enterprise" && (
@@ -880,40 +865,88 @@ function PmfbySection({
   filedClaims: any[];
   handleOverrideClaim: (ackId: string, action: string) => void;
 }) {
+  const [activeSubTab, setActiveSubTab] = useState<"queue" | "generator" | "alerts">("queue");
+
   return (
-    <section id="pmfby" className="py-28 md:py-36 border-b border-border bg-soil/60">
-      <div className="mx-auto max-w-[1600px] px-6 md:px-10 space-y-10">
+    <section id="pmfby" className="py-20 md:py-28 border-b border-border bg-soil/60">
+      <div className="mx-auto max-w-[1600px] px-6 md:px-10 space-y-8">
         <Reveal>
-          <div>
-            <p className="eyebrow">Chapter three — SRS v2.0 PMFBY Automation</p>
-            <h2 className="mt-4 text-[clamp(2.4rem,6vw,5rem)]">
-              PMFBY 72h Claims &amp; Vernacular WhatsApp Alerts
-            </h2>
-            <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
-              Combining two-tier advisories, multi-signal false-positive guardrails, plain-language explainability, and 1-tap WhatsApp claim approval.
-            </p>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-6">
+            <div>
+              <p className="eyebrow">Enterprise & Officer Operations</p>
+              <h2 className="mt-2 text-[clamp(2.2rem,5vw,4.2rem)]">
+                PMFBY Claims Verification & Corroboration Center
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm md:text-base text-muted-foreground">
+                Review live farmer claim submissions, geotagged evidence photos, satellite multi-signal corroboration, and gazette notice audits.
+              </p>
+            </div>
+
+            {/* De-cluttered Tabbed Navigation */}
+            <div className="flex items-center gap-2 bg-card border border-border p-1.5 rounded-2xl shrink-0 self-start md:self-auto shadow-md">
+              <button
+                onClick={() => setActiveSubTab("queue")}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  activeSubTab === "queue"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                📋 Claims Queue ({filedClaims.length})
+              </button>
+              <button
+                onClick={() => setActiveSubTab("generator")}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  activeSubTab === "generator"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                ⚡ PDF Evidence Generator
+              </button>
+              <button
+                onClick={() => setActiveSubTab("alerts")}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  activeSubTab === "alerts"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                📡 Dispatched Alerts
+              </button>
+            </div>
           </div>
         </Reveal>
 
         <Reveal delay={100}>
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-            <div className="xl:col-span-6">
-              <PmfbyClaimCard plot={selectedPlot} />
-            </div>
-            <div className="xl:col-span-6 space-y-8">
-              <OfficerAggregateView 
-                onAddNewPlot={onAddNewPlot} 
-                plotCount={plotCount} 
-                filedClaims={filedClaims}
-                onOverrideClaim={handleOverrideClaim}
-              />
-              <RealTimeAlertsFeed 
-                sharedAlerts={dispatchedAlerts} 
-                onUpdateAlert={handleUpdateAlert}
-                filedClaims={filedClaims}
-                onOverrideClaim={handleOverrideClaim}
-              />
-            </div>
+          <div className="min-h-[500px]">
+            {activeSubTab === "queue" && (
+              <div className="animate-fade-in">
+                <OfficerAggregateView 
+                  onAddNewPlot={onAddNewPlot} 
+                  plotCount={plotCount} 
+                  filedClaims={filedClaims}
+                  onOverrideClaim={handleOverrideClaim}
+                />
+              </div>
+            )}
+
+            {activeSubTab === "generator" && (
+              <div className="animate-fade-in max-w-4xl mx-auto">
+                <PmfbyClaimCard plot={selectedPlot} />
+              </div>
+            )}
+
+            {activeSubTab === "alerts" && (
+              <div className="animate-fade-in max-w-4xl mx-auto">
+                <RealTimeAlertsFeed 
+                  sharedAlerts={dispatchedAlerts} 
+                  onUpdateAlert={handleUpdateAlert}
+                  filedClaims={filedClaims}
+                  onOverrideClaim={handleOverrideClaim}
+                />
+              </div>
+            )}
           </div>
         </Reveal>
       </div>

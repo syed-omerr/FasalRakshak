@@ -67,10 +67,16 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
         saveSessionToStorage(sessionObj);
         onLoginSuccess(sessionObj);
       } else {
-        const resolvedEmail = email.trim() || "officer@telangana.gov.in";
+        const enteredPassword = password.trim();
+        if (enteredPassword && enteredPassword !== "admin123") {
+          setErrorMessage("❌ Invalid Password. Use password: admin123");
+          return;
+        }
+
+        const resolvedEmail = email.trim() || "admin@telangana.gov.in";
         const sessionObj = {
           role: "enterprise" as const,
-          name: email.includes("@") ? email.split("@")[0].toUpperCase() + " (Officer)" : "ADMIN OFFICER",
+          name: resolvedEmail.includes("@") ? resolvedEmail.split("@")[0].toUpperCase() + " (Officer)" : "ADMIN OFFICER",
           email: resolvedEmail,
           district: district || "Warangal Region"
         };
@@ -78,7 +84,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
         saveSessionToStorage(sessionObj);
         onLoginSuccess(sessionObj);
       }
-    }, 1000);
+    }, 800);
   };
 
   // Demo bypass triggers for quick evaluation
@@ -87,22 +93,26 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     setTimeout(() => {
       setLoading(false);
       if (role === "kisan") {
-        onLoginSuccess({
-          role: "kisan",
+        const sessionObj = {
+          role: "kisan" as const,
           name: "Ramesh Reddy",
           phone: "+919848022339",
           village: "Warangal West Block",
           crop: "Groundnut"
-        });
+        };
+        saveSessionToStorage(sessionObj);
+        onLoginSuccess(sessionObj);
       } else {
-        onLoginSuccess({
-          role: "enterprise",
-          name: "Officer Suresh Kumar",
-          email: "suresh.kumar@telangana.gov.in",
+        const sessionObj = {
+          role: "enterprise" as const,
+          name: "Admin Officer Suresh",
+          email: "admin@telangana.gov.in",
           district: "Warangal District"
-        });
+        };
+        saveSessionToStorage(sessionObj);
+        onLoginSuccess(sessionObj);
       }
-    }, 800);
+    }, 600);
   };
 
   return (
