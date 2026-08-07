@@ -39,6 +39,7 @@ import {
 import { 
   loadSessionFromStorage, 
   saveSessionToStorage, 
+  saveFarmerToRegistry,
   loadPlotsFromStorage, 
   savePlotsToStorage, 
   loadClaimsFromStorage, 
@@ -362,8 +363,18 @@ function Index() {
     if (session.role === "kisan") {
       const plotId = `plot-session-${Date.now()}`;
       const name = session.name;
+      const phone = session.phone || "9848022339";
       const village = session.village || "Warangal";
       const crop = session.crop || "Cotton";
+
+      // Save user profile into registered farmers database
+      saveFarmerToRegistry({
+        name: name,
+        phone: phone,
+        village: village,
+        crop: crop,
+        registered_at: new Date().toISOString()
+      });
       
       const newPlot: FarmPlot = {
         id: plotId,
@@ -384,8 +395,9 @@ function Index() {
       };
       
       setPlotList((prev) => {
-        if (prev.some((p) => p.farmer === name)) return prev;
-        return [newPlot, ...prev];
+        const updated = prev.some((p) => p.farmer === name) ? prev : [newPlot, ...prev];
+        savePlotsToStorage(updated);
+        return updated;
       });
       setSelectedPlot(newPlot);
     }

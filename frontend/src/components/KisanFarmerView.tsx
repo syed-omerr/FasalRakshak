@@ -297,22 +297,26 @@ export function KisanFarmerView({
     const ttsLang = langCode === "TE" ? "te" : langCode === "HI" ? "hi" : "en";
     const voiceLangCode = langCode === "TE" ? "te-IN" : langCode === "HI" ? "hi-IN" : "en-IN";
 
-    // Check if browser has a native voice installed for this language
-    let nativeVoiceAvailable = false;
+    // Find exact matching voice object in browser SpeechSynthesis
+    let matchingVoice: SpeechSynthesisVoice | undefined;
     if ("speechSynthesis" in window) {
       const voices = window.speechSynthesis.getVoices();
-      nativeVoiceAvailable = voices.some((v) => v.lang.toLowerCase().includes(ttsLang));
+      matchingVoice = voices.find(
+        (v) => v.lang.toLowerCase().includes(ttsLang) || 
+               v.name.toLowerCase().includes(ttsLang === "te" ? "telugu" : ttsLang === "hi" ? "hindi" : "english")
+      );
     }
 
-    if (nativeVoiceAvailable) {
+    if (matchingVoice) {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = voiceLangCode;
+      utterance.voice = matchingVoice;
+      utterance.lang = matchingVoice.lang || voiceLangCode;
       utterance.rate = 0.85;
       window.speechSynthesis.speak(utterance);
       return;
     }
 
-    // Dual-Engine Fallback: Play high-clarity online audio stream for Telugu/Hindi
+    // High-Clarity Fallback: Play online Google Translate TTS audio stream directly
     try {
       const encodedText = encodeURIComponent(text);
       const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${ttsLang}&client=tw-ob`;
