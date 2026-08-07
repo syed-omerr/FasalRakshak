@@ -16,7 +16,8 @@ import {
   Activity,
   X,
   ShieldCheck,
-  Volume2
+  Volume2,
+  Radio
 } from "lucide-react";
 
 interface KisanFarmerViewProps {
@@ -77,10 +78,17 @@ const LOCALIZED_TEXT = {
     cropStage: "పంట దశ",
     gazetteNotice: "గెజిట్",
     voiceTitle: "ఫసల్‌రక్షక్ వాయిస్ అసిస్టెంట్",
-    voicePlaceholder: "మీ ప్రశ్న ఇక్కడ టైప్ చేయండి...",
+    micTapPrompt: "🎙️ మాట్లాడటానికి మైక్ నొక్కండి (Tap Mic to Speak)",
+    listeningPrompt: "🔴 వింటోంది... స్పష్టంగా మాట్లాడండి (Listening... Speak Now)",
+    voicePlaceholder: "లేదా ఇక్కడ టైప్ చేయండి...",
     send: "పంపు",
-    voiceProcessing: "జవాబు విశ్లేషిస్తోంది...",
-    welcomeGreeting: "నమస్కారం! మీ పొలం నష్టం లేదా నేల తేమ వివరాల కోసం మాట్లాడండి లేదా కింద ఉన్న 1-టాప్ క్లెయిమ్ బటన్ నొక్కండి.",
+    voiceProcessing: "Google AI జవాబు విశ్లేషిస్తోంది...",
+    welcomeGreeting: "నమస్కారం! మీ పొలం నేల తేమ లేదా పంట నష్టం గురించి మాట్లాడటానికి కింద మైక్ నొక్కండి.",
+    quickQueryChips: [
+      "💧 నేల తేమ వివరాలు ఎలా ఉన్నాయి?",
+      "⚡ PMFBY క్లెయిమ్ ఎలా నమోదు చేయాలి?",
+      "🌦️ వర్ష సూచన వివరాలు చెప్పు"
+    ],
     registerPlotTitle: "పొలం నమోదు చేయండి",
     farmerNameLabel: "రైతు పేరు",
     phoneLabel: "ఫోన్ నంబర్",
@@ -130,10 +138,17 @@ const LOCALIZED_TEXT = {
     cropStage: "फसल की अवस्था",
     gazetteNotice: "राजपत्र अधिसूचना",
     voiceTitle: "फसलरक्षक वॉयस असिस्टेंट",
-    voicePlaceholder: "अपना प्रश्न यहाँ टाइप करें...",
+    micTapPrompt: "🎙️ बोलने के लिए माइक दबाएं (Tap Mic to Speak)",
+    listeningPrompt: "🔴 सुन रहा है... बोलिए (Listening... Speak Now)",
+    voicePlaceholder: "या यहाँ टाइप करें...",
     send: "भेजें",
     voiceProcessing: "उत्तर का विश्लेषण किया जा रहा है...",
-    welcomeGreeting: "नमस्ते! अपने खेत की स्थिति जानने या दावा दर्ज करने के लिए बोलें या 1-क्लिक बटन दबाएं।",
+    welcomeGreeting: "नमस्ते! अपने खेत की स्थिति जानने या दावा करने के लिए नीचे माइक दबाकर बोलें।",
+    quickQueryChips: [
+      "💧 मिट्टी की नमी की जानकारी दो",
+      "⚡ बीमा दावा कैसे दर्ज करें?",
+      "🌦️ बारिश का पूर्वानुमान क्या है?"
+    ],
     registerPlotTitle: "खेत दर्ज करें",
     farmerNameLabel: "किसान का नाम",
     phoneLabel: "मोबाइल नंबर",
@@ -183,10 +198,17 @@ const LOCALIZED_TEXT = {
     cropStage: "Crop Stage",
     gazetteNotice: "Govt Gazette",
     voiceTitle: "FasalRakshak Voice AI Assistant",
-    voicePlaceholder: "Type your query or talk...",
+    micTapPrompt: "🎙️ Tap Mic to Talk (మాట్లాడండి)",
+    listeningPrompt: "🔴 Listening... Speak clearly now",
+    voicePlaceholder: "Or type your query here...",
     send: "Send",
     voiceProcessing: "Google AI analyzing query...",
-    welcomeGreeting: "Welcome! Speak or type to query plot health or submit your 1-Tap PMFBY claim.",
+    welcomeGreeting: "Welcome! Tap the big mic below and speak naturally to query field health or file a PMFBY claim.",
+    quickQueryChips: [
+      "💧 What is my soil moisture level?",
+      "⚡ How do I file a 1-Tap claim?",
+      "🌦️ Is rain expected tomorrow?"
+    ],
     registerPlotTitle: "Register New Plot",
     farmerNameLabel: "Farmer Name",
     phoneLabel: "Mobile Number",
@@ -217,6 +239,7 @@ export function KisanFarmerView({
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [voiceQuery, setVoiceQuery] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const t = LOCALIZED_TEXT[language];
 
@@ -271,6 +294,50 @@ export function KisanFarmerView({
       utterance.lang = langCode === "TE" ? "te-IN" : langCode === "HI" ? "hi-IN" : "en-IN";
       utterance.rate = 0.85;
       window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // Web Speech API Live Microphone Listener
+  const startSpeechRecognition = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      // Fallback for browsers without Web Speech API
+      const fallbackQuery = t.quickQueryChips[0];
+      handleSendVoiceQuery(fallbackQuery);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = language === "TE" ? "te-IN" : language === "HI" ? "hi-IN" : "en-IN";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      setIsListening(true);
+      speakText(language === "TE" ? "వ వింటున్నాను... చెప్పండి" : language === "HI" ? "सुन रहा हूँ... बोलिए" : "Listening, speak now", language);
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setIsListening(false);
+        if (transcript && transcript.trim()) {
+          setVoiceQuery(transcript);
+          handleSendVoiceQuery(transcript);
+        }
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    } catch (e) {
+      setIsListening(false);
+      handleSendVoiceQuery(t.quickQueryChips[0]);
     }
   };
 
@@ -787,45 +854,106 @@ export function KisanFarmerView({
       <div className="fixed bottom-6 right-6 z-50">
         <button
           type="button"
-          onClick={() => setShowVoiceModal(!showVoiceModal)}
-          className="size-14 rounded-full bg-primary hover:bg-primary/95 text-primary-foreground shadow-2xl flex items-center justify-center cursor-pointer transition-all border-2 border-primary/50 hover:scale-105 active:scale-95"
+          onClick={() => {
+            setShowVoiceModal(!showVoiceModal);
+            if (!showVoiceModal) startSpeechRecognition();
+          }}
+          className="size-16 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-2xl flex items-center justify-center cursor-pointer transition-all border-2 border-emerald-400/60 hover:scale-105 active:scale-95"
           title={t.voiceTitle}
         >
-          <Mic className="size-7 animate-pulse" />
-          <span className="absolute -top-1 -right-1 size-3 rounded-full bg-emerald-400 animate-ping" />
+          <Mic className="size-8 animate-pulse" />
+          <span className="absolute -top-1 -right-1 size-4 rounded-full bg-rose-500 animate-ping" />
         </button>
       </div>
 
-      {/* VOICE ASSISTANT MODAL DRAWER */}
+      {/* ULTRA-INTUITIVE HANDS-FREE AUDIO ASSISTANT MODAL DRAWER */}
       {showVoiceModal && (
-        <div className="fixed bottom-24 right-6 z-50 w-full max-w-md bg-card border border-primary/40 rounded-2xl shadow-2xl p-5 space-y-4 backdrop-blur-xl">
+        <div className="fixed bottom-24 right-6 z-50 w-full max-w-md bg-card/95 border-2 border-emerald-500/40 rounded-3xl shadow-2xl p-6 space-y-4 backdrop-blur-2xl">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div className="flex items-center gap-2">
-              <Mic className="size-5 text-primary animate-pulse" />
-              <h4 className="font-bold text-sm text-foreground">{t.voiceTitle}</h4>
+              <div className="size-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <Mic className="size-4 animate-bounce" />
+              </div>
+              <div>
+                <h4 className="font-black text-sm text-foreground">{t.voiceTitle}</h4>
+                <p className="text-[10px] text-emerald-400 font-bold">100% Voice Hands-Free Mode</p>
+              </div>
             </div>
-            <button onClick={() => setShowVoiceModal(false)} className="text-muted-foreground hover:text-foreground font-bold text-xs">
+            <button onClick={() => setShowVoiceModal(false)} className="text-muted-foreground hover:text-foreground font-bold text-xs p-1">
               <X className="size-5" />
             </button>
           </div>
 
-          <div className="max-h-64 overflow-y-auto space-y-3 text-xs">
+          {/* GIANT INTUITIVE 1-TAP AUDIO RECORDING BUTTON FOR NON-TECH FARMERS */}
+          <div className="bg-soil/80 border border-emerald-500/30 rounded-2xl p-4 text-center space-y-3">
+            <button
+              type="button"
+              onClick={startSpeechRecognition}
+              className={`w-full py-4 px-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-3 cursor-pointer shadow-lg active:scale-95 ${
+                isListening
+                  ? "bg-rose-600 text-white animate-pulse border-2 border-rose-400"
+                  : "bg-emerald-600 hover:bg-emerald-500 text-white border-2 border-emerald-400/50"
+              }`}
+            >
+              {isListening ? (
+                <>
+                  <Radio className="size-6 animate-spin" />
+                  <span>{t.listeningPrompt}</span>
+                </>
+              ) : (
+                <>
+                  <Mic className="size-6 animate-pulse" />
+                  <span>{t.micTapPrompt}</span>
+                </>
+              )}
+            </button>
+
+            {/* PRESET 1-TAP VERNACULAR AUDIO CHIPS FOR EASY SELECTION */}
+            <div className="space-y-1.5 text-left pt-1">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">లేదా కింద ఉన్న క్విక్ ప్రశ్న నొక్కండి (Tap Quick Query):</p>
+              <div className="flex flex-col gap-1.5">
+                {t.quickQueryChips.map((chip, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSendVoiceQuery(chip)}
+                    className="p-2.5 rounded-xl bg-card hover:bg-secondary border border-border text-left font-bold text-xs text-foreground transition-all cursor-pointer flex items-center justify-between"
+                  >
+                    <span>{chip}</span>
+                    <Volume2 className="size-3.5 text-primary shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* CONVERSATION HISTORY LOG WITH REPLAY AUDIO BUTTONS */}
+          <div className="max-h-56 overflow-y-auto space-y-3 text-xs pr-1">
             {dialogue.map((msg, i) => (
               <div key={i} className={`flex flex-col ${msg.sender === "farmer" ? "items-end" : "items-start"}`}>
-                <div className={`max-w-[85%] rounded-xl p-3 space-y-1 ${msg.sender === "farmer" ? "bg-primary text-primary-foreground" : "bg-soil/90 border border-border text-foreground"}`}>
+                <div className={`max-w-[85%] rounded-2xl p-3 space-y-1 shadow-sm ${msg.sender === "farmer" ? "bg-primary text-primary-foreground" : "bg-soil border border-border text-foreground"}`}>
                   <p className="leading-relaxed font-semibold">{msg.text}</p>
+                  {msg.sender === "assistant" && (
+                    <button
+                      onClick={() => speakText(msg.text, language)}
+                      className="text-[10px] font-bold text-emerald-400 hover:underline flex items-center gap-1 pt-1 cursor-pointer"
+                    >
+                      <Volume2 className="size-3" /> {t.listenBtn}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
             {isProcessing && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
-                <Loader2 className="size-3.5 text-primary animate-spin" />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground italic p-2">
+                <Loader2 className="size-4 text-emerald-400 animate-spin" />
                 <span>{t.voiceProcessing}</span>
               </div>
             )}
             <div ref={dialogueEndRef} />
           </div>
 
+          {/* OPTIONAL TYPING FALLBACK FOR ASSISTANTS */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
