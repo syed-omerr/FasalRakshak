@@ -229,6 +229,9 @@ export function KisanFarmerView({
   filedClaims
 }: KisanFarmerViewProps) {
   const activePlot = selectedPlot || plots[0] || INITIAL_PLOTS[0];
+  const currentClaim = (filedClaims || []).find(
+    (c) => c.plot_id === activePlot.id || (selectedPlot && c.plot_id === selectedPlot.id)
+  );
 
   // Onboarding state
   const [farmerName, setFarmerName] = useState("");
