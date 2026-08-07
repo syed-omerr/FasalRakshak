@@ -20,7 +20,8 @@ import {
   Volume2,
   Radio,
   Send,
-  FileText
+  FileText,
+  ShieldAlert
 } from "lucide-react";
 
 interface KisanFarmerViewProps {
@@ -248,6 +249,9 @@ export function KisanFarmerView({
   const [voiceQuery, setVoiceQuery] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isListening, setIsListening] = useState(false);
+
+  // Vernacular Feature Navigation Bar Tab State
+  const [activeKisanTab, setActiveKisanTab] = useState<"all" | "health" | "claim" | "photo" | "voice" | "chatbot" | "irrigation">("all");
 
   const t = LOCALIZED_TEXT[language];
 
@@ -659,6 +663,94 @@ export function KisanFarmerView({
         </div>
       )}
 
+      {/* VERNACULAR FEATURE NAVIGATION BAR */}
+      {!isOnboarding && (
+        <div className="bg-card/90 backdrop-blur-md border border-primary/30 rounded-2xl p-2 shadow-lg overflow-x-auto scrollbar-none flex items-center gap-1.5 sticky top-14 z-30">
+          <button
+            onClick={() => setActiveKisanTab("all")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              activeKisanTab === "all"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "bg-soil hover:bg-secondary text-muted-foreground hover:text-foreground border border-border"
+            }`}
+          >
+            <span>📱 {language === "TE" ? "అన్ని వివరాలు (All)" : "All Features"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveKisanTab("health")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              activeKisanTab === "health"
+                ? "bg-emerald-600 text-white shadow-md"
+                : "bg-soil hover:bg-secondary text-muted-foreground hover:text-foreground border border-border"
+            }`}
+          >
+            <Activity className="size-3.5 text-emerald-300" />
+            <span>{language === "TE" ? "🌾 పొలం ఆరోగ్యం" : "🌾 Field Health & NDVI"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveKisanTab("claim")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              activeKisanTab === "claim"
+                ? "bg-rose-600 text-white shadow-md"
+                : "bg-soil hover:bg-secondary text-muted-foreground hover:text-foreground border border-border"
+            }`}
+          >
+            <ShieldAlert className="size-3.5 text-rose-300" />
+            <span>{language === "TE" ? "⚡ PMFBY క్లెయిమ్" : "⚡ 1-Tap PMFBY Claim"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveKisanTab("photo")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              activeKisanTab === "photo"
+                ? "bg-amber-600 text-white shadow-md"
+                : "bg-soil hover:bg-secondary text-muted-foreground hover:text-foreground border border-border"
+            }`}
+          >
+            <Camera className="size-3.5 text-amber-300" />
+            <span>{language === "TE" ? "📷 పంట ఫోటో" : "📷 Take Crop Photo"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveKisanTab("voice")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              activeKisanTab === "voice"
+                ? "bg-cyan-600 text-white shadow-md"
+                : "bg-soil hover:bg-secondary text-muted-foreground hover:text-foreground border border-border"
+            }`}
+          >
+            <Radio className="size-3.5 text-cyan-300" />
+            <span>{language === "TE" ? "🎙️ వాయిస్ ఆధారాలు" : "🎙️ Voice Statement"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveKisanTab("chatbot")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              activeKisanTab === "chatbot"
+                ? "bg-purple-600 text-white shadow-md"
+                : "bg-soil hover:bg-secondary text-muted-foreground hover:text-foreground border border-border"
+            }`}
+          >
+            <Sparkles className="size-3.5 text-purple-300 animate-pulse" />
+            <span>{language === "TE" ? "🤖 AI సహాయకుడు" : "🤖 Voice AI Chatbot"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveKisanTab("irrigation")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              activeKisanTab === "irrigation"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-soil hover:bg-secondary text-muted-foreground hover:text-foreground border border-border"
+            }`}
+          >
+            <Droplets className="size-3.5 text-blue-300" />
+            <span>{language === "TE" ? "💧 నీటి యాజమాన్యం" : "💧 Irrigation Schedule"}</span>
+          </button>
+        </div>
+      )}
+
       {/* ONBOARDING REGISTRATION MODAL IF TRIGGERED */}
       {isOnboarding && (
         <div className="bg-card border border-primary/40 rounded-2xl p-6 shadow-2xl space-y-4">
@@ -744,14 +836,16 @@ export function KisanFarmerView({
       <div className="space-y-6">
         
         {/* SATELLITE NDVI & SWI TELEMETRY ANALYTICS CARD */}
-        <NdviAnalytics plot={activePlot} />
+        {(activeKisanTab === "all" || activeKisanTab === "health") && (
+          <>
+            <NdviAnalytics plot={activePlot} />
 
-        {/* CARD 1: FIELD CONDITION */}
-          <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-lg">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="text-lg font-black text-foreground flex items-center gap-2">
-                {t.fieldConditionTitle}
-              </h3>
+            {/* CARD 1: FIELD CONDITION */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-lg">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h3 className="text-lg font-black text-foreground flex items-center gap-2">
+                  {t.fieldConditionTitle}
+                </h3>
               <button
                 onClick={() => {
                   speakText(t.soilAdvice, language);
@@ -796,8 +890,11 @@ export function KisanFarmerView({
               </div>
             </div>
           </div>
+        </>
+      )}
 
-          {/* CARD 2: 1-TAP INSURANCE CLAIM */}
+        {/* CARD 2: 1-TAP INSURANCE CLAIM */}
+        {(activeKisanTab === "all" || activeKisanTab === "claim") && (
           <div className="bg-card border-2 border-emerald-500/40 rounded-2xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div>
@@ -903,8 +1000,10 @@ export function KisanFarmerView({
               </div>
             )}
           </div>
+        )}
 
-          {/* CARD 3: TAKE CROP PHOTO */}
+        {/* CARD 3: TAKE CROP PHOTO */}
+        {(activeKisanTab === "all" || activeKisanTab === "photo") && (
           <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-lg">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-lg font-black text-foreground flex items-center gap-2">
@@ -964,8 +1063,10 @@ export function KisanFarmerView({
               </div>
             )}
           </div>
+        )}
 
-          {/* CARD 4: 🎙️ VOICE STATEMENT EVIDENCE RECORDER */}
+        {/* CARD 4: 🎙️ VOICE STATEMENT EVIDENCE RECORDER */}
+        {(activeKisanTab === "all" || activeKisanTab === "voice") && (
           <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-lg">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-lg font-black text-foreground flex items-center gap-2">
@@ -1013,7 +1114,146 @@ export function KisanFarmerView({
               )}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* CARD 5: 🤖 VERNACULAR AI VOICE CHATBOT CARD */}
+        {(activeKisanTab === "all" || activeKisanTab === "chatbot") && (
+          <div className="bg-card border-2 border-purple-500/40 rounded-2xl p-6 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div>
+                <h3 className="text-lg font-black text-foreground flex items-center gap-2">
+                  <Sparkles className="size-5 text-purple-400 animate-pulse" /> {language === "TE" ? "🤖 AI వాయిస్ సహాయకుడు (Google Gemini AI)" : "🤖 Vernacular Voice AI Chatbot"}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {language === "TE"
+                    ? "మీ పంట ఆరోగ్యం, నీటి పారుదల, PMFBY క్లెయిమ్, మండి ధరలు మరియు తెగుళ్ళ నివారణ గురించి ప్రశ్నించండి."
+                    : "Ask intelligent questions about soil moisture, irrigation, PMFBY claims, pest risks, and mandi market prices."}
+                </p>
+              </div>
+              <span className="text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/30 px-3 py-1 rounded-full shrink-0">
+                {language === "TE" ? "వాయిస్ & టైపింగ్ మద్దతు" : "Voice & Text Mode"}
+              </span>
+            </div>
+
+            {/* Quick Query Chips */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-muted-foreground block">{language === "TE" ? "త్వరిత ప్రశ్నలు (Quick Questions):" : "Suggested Questions:"}</span>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "💧 నేల తేమ ఎంతుంది? (Soil Moisture)", query: "నేల తేమ ఎంతుంది?" },
+                  { label: "⚡ PMFBY క్లెయిమ్ ఎలా చేయాలి? (File Claim)", query: "PMFBY క్లెయిమ్ వివరాలు" },
+                  { label: "🌧️ వర్షపాతం నివేదిక (Weather Rain)", query: "వర్షం ఎప్పుడు పడుతుంది?" },
+                  { label: "🐛 పురుగు మందుల వివరాలు (Pest Control)", query: "పంటకు పురుగు తెగులు నివారణ" },
+                  { label: "💰 వరంగల్ మండి ధర (Mandi Prices)", query: "వరంగల్ మండి ధర ఎంతుంది?" }
+                ].map((chip, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSendVoiceQuery(chip.query)}
+                    className="px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-extrabold transition-all cursor-pointer shadow-sm flex items-center gap-1"
+                  >
+                    <span>{chip.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Chatbot Dialogue Feed */}
+            <div className="bg-soil/90 border border-border rounded-xl p-4 max-h-64 overflow-y-auto space-y-3">
+              {dialogue.map((msg, idx) => (
+                <div key={idx} className={`flex flex-col ${msg.sender === "farmer" ? "items-end" : "items-start"}`}>
+                  <div className={`max-w-[88%] p-3 rounded-2xl text-xs space-y-1 ${
+                    msg.sender === "farmer"
+                      ? "bg-primary text-primary-foreground font-bold rounded-tr-none shadow"
+                      : "bg-card border border-purple-500/30 text-foreground font-medium rounded-tl-none shadow"
+                  }`}>
+                    <p className="leading-relaxed">{msg.text}</p>
+                    {msg.sender === "assistant" && msg.translated && (
+                      <p className="text-[10px] text-muted-foreground italic border-t border-border/40 pt-1 mt-1">
+                        English: {msg.translated}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {isProcessing && (
+                <div className="flex items-center gap-2 text-xs font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 p-2.5 rounded-xl w-fit">
+                  <Loader2 className="size-4 animate-spin text-purple-400" />
+                  <span>{language === "TE" ? "AI విశ్లేషిస్తోంది..." : "Google Gemini AI is generating response..."}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Chatbot Input Bar */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (voiceQuery.trim()) handleSendVoiceQuery(voiceQuery);
+              }}
+              className="flex items-center gap-2"
+            >
+              <button
+                type="button"
+                onClick={startSpeechRecognition}
+                className={`p-3 rounded-xl cursor-pointer transition-all ${
+                  isListening ? "bg-rose-600 text-white animate-pulse" : "bg-purple-600 hover:bg-purple-500 text-white"
+                }`}
+                title="Speak question"
+              >
+                <Mic className="size-5" />
+              </button>
+              <input
+                type="text"
+                value={voiceQuery}
+                onChange={(e) => setVoiceQuery(e.target.value)}
+                placeholder={language === "TE" ? "ఇక్కడ మీ ప్రశ్నను టైప్ చేయండి లేదా మాట్లాడండి..." : "Type or speak your question here..."}
+                className="flex-1 bg-soil border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-purple-500"
+              />
+              <button
+                type="submit"
+                disabled={!voiceQuery.trim() || isProcessing}
+                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold cursor-pointer transition-all disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Send className="size-4" />
+                <span>{language === "TE" ? "పంపండి" : "Send"}</span>
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* CARD 6: 💧 PRESCRIPTIVE IRRIGATION SCHEDULE CARD */}
+        {(activeKisanTab === "all" || activeKisanTab === "irrigation") && (
+          <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-lg">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-lg font-black text-foreground flex items-center gap-2">
+                <Droplets className="size-5 text-blue-400" /> {language === "TE" ? "💧 నిర్దేశిత నీటి పారుదల ప్రణాళిక (Irrigation Schedule)" : "💧 Prescriptive Drip Irrigation Engine"}
+              </h3>
+              <span className="text-xs font-bold text-blue-400 bg-blue-500/10 border border-blue-500/30 px-3 py-1 rounded-full">
+                {language === "TE" ? "SWI తేమ ఆధారంగా" : "Root-Zone Telemetry"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="bg-soil border border-border p-3.5 rounded-xl space-y-1">
+                <span className="text-muted-foreground font-bold block">{language === "TE" ? "నేటి నీటి పరిమాణం:" : "Recommended Volume:"}</span>
+                <span className="text-lg font-black text-blue-400">8,500 L/Acre</span>
+                <span className="text-[10px] text-muted-foreground block">Drip Irrigation Stream</span>
+              </div>
+
+              <div className="bg-soil border border-border p-3.5 rounded-xl space-y-1">
+                <span className="text-muted-foreground font-bold block">{language === "TE" ? "అనుకూల సమయం:" : "Optimal Timing Window:"}</span>
+                <span className="text-lg font-black text-emerald-400">6:00 AM - 8:30 AM</span>
+                <span className="text-[10px] text-emerald-400 block">Low Evaporation Loss</span>
+              </div>
+
+              <div className="bg-soil border border-border p-3.5 rounded-xl space-y-1">
+                <span className="text-muted-foreground font-bold block">{language === "TE" ? "SWI తేమ స్థితి:" : "Moisture Deficit:"}</span>
+                <span className="text-lg font-black text-rose-400">42% (Moisture Stress)</span>
+                <span className="text-[10px] text-rose-400 block">Root-Zone Dryness</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ========================================================================= */}
       {/* FLOATING VOICE ASSISTANT MIC BUTTON (BOTTOM-RIGHT)                       */}
