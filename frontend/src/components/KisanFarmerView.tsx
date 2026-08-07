@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FarmPlot } from "../lib/plots";
+import { chatWithGoogleAIAssistant, submitPMFBYClaim } from "../lib/api";
 import {
   Mic,
   MicOff,
@@ -234,31 +235,19 @@ export function KisanFarmerView({
     ]);
 
     try {
-      // Primary: Google AI Assistant Engine endpoint on FastAPI backend
-      const res = await fetch("http://localhost:8000/api/assistant/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          farmer_name: selectedPlot.farmer,
-          plot_id: selectedPlot.id,
-          crop_type: selectedPlot.crop_type,
-          location: selectedPlot.location,
-          acreage: selectedPlot.acreage,
-          ndvi_mean: selectedPlot.ndvi_mean,
-          swi_mean: selectedPlot.swi_mean || 0.42,
-          swi_trend_7d: selectedPlot.swi_trend_7d || -0.06,
-          health_status: selectedPlot.health_status,
-          query_text: queryText,
-          language: language
-        })
+      const parsed = await chatWithGoogleAIAssistant({
+        farmer_name: selectedPlot.farmer,
+        plot_id: selectedPlot.id,
+        crop_type: selectedPlot.crop_type,
+        location: selectedPlot.location,
+        acreage: selectedPlot.acreage,
+        ndvi_mean: selectedPlot.ndvi_mean,
+        swi_mean: selectedPlot.swi_mean || 0.42,
+        swi_trend_7d: selectedPlot.swi_trend_7d || -0.06,
+        health_status: selectedPlot.health_status,
+        query_text: queryText,
+        language: language
       });
-
-      let parsed: any;
-      if (res.ok) {
-        parsed = await res.json();
-      } else {
-        throw new Error(`Google AI API returned status ${res.status}`);
-      }
 
       const botMessageText = parsed.text_response || "నమస్కారం! మీ ప్రశ్నను పరిశీలిస్తున్నాము.";
       const botTransText = parsed.translated_text || "Namaskaram! Processing your query.";
