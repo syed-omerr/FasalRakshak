@@ -23,6 +23,30 @@ export interface FarmerProfile {
   registered_at: string;
 }
 
+export const DEFAULT_FARMERS: FarmerProfile[] = [
+  {
+    name: "Ramesh Reddy",
+    phone: "9848022339",
+    village: "Warangal West Block",
+    crop: "Groundnut",
+    registered_at: "2026-01-10"
+  },
+  {
+    name: "M. Venkataiah",
+    phone: "9440188231",
+    village: "Parkal, Warangal",
+    crop: "Chilli",
+    registered_at: "2026-02-15"
+  },
+  {
+    name: "G. Laxmi",
+    phone: "9866210984",
+    village: "Narsampet, Warangal",
+    crop: "Rice/Paddy",
+    registered_at: "2026-03-01"
+  }
+];
+
 /**
  * 1. Save Active Session
  */
@@ -58,12 +82,75 @@ export function clearSessionStorage() {
 }
 
 /**
- * 4. Save & Sync Plots
+ * 4. Load Farmer Accounts Registry
+ */
+export function loadFarmersFromStorage(): FarmerProfile[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.FARMERS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    // Fall through to defaults
+  }
+  return DEFAULT_FARMERS;
+}
+
+/**
+ * 5. Save Farmer Account to Registry
+ */
+export function saveFarmerToRegistry(farmer: FarmerProfile): FarmerProfile[] {
+  const current = loadFarmersFromStorage();
+  const existingIdx = current.findIndex(
+    (f) => f.phone.replace(/\D/g, "") === farmer.phone.replace(/\D/g, "") ||
+           f.name.toLowerCase() === farmer.name.toLowerCase()
+  );
+
+  let updated: FarmerProfile[];
+  if (existingIdx >= 0) {
+    updated = [...current];
+    updated[existingIdx] = farmer;
+  } else {
+    updated = [farmer, ...current];
+  }
+
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.FARMERS, JSON.stringify(updated));
+    syncToSupabase("farmers", farmer);
+  } catch (e) {
+    console.warn("Farmer save notice:", e);
+  }
+  return updated;
+}
+
+/**
+ * 6. Verify Farmer Login (Matches Name AND Phone Number)
+ */
+export function verifyFarmerLogin(name: string, phone: string): FarmerProfile | null {
+  const farmers = loadFarmersFromStorage();
+  const cleanPhone = phone.replace(/\D/g, "");
+  const cleanName = name.trim().toLowerCase();
+
+  // Find exact match for phone and/or name
+  const match = farmers.find((f) => {
+    const fPhone = f.phone.replace(/\D/g, "");
+    const fName = f.name.trim().toLowerCase();
+    
+    // Match by clean phone number or exact name
+    return (cleanPhone && fPhone.endsWith(cleanPhone.slice(-10))) ||
+           (cleanName && fName === cleanName);
+  });
+
+  return match || null;
+}
+
+/**
+ * 7. Save & Sync Plots
  */
 export function savePlotsToStorage(plots: any[]) {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEYS.PLOTS, JSON.stringify(plots));
-    // Asynchronously post to Supabase endpoint if available
     syncToSupabase("plots", plots);
   } catch (e) {
     console.warn("Plots save notice:", e);
@@ -71,7 +158,7 @@ export function savePlotsToStorage(plots: any[]) {
 }
 
 /**
- * 5. Load Plots
+ * 8. Load Plots
  */
 export function loadPlotsFromStorage(defaultPlots: any[]) {
   try {
@@ -83,7 +170,7 @@ export function loadPlotsFromStorage(defaultPlots: any[]) {
 }
 
 /**
- * 6. Save & Sync Claims
+ * 9. Save & Sync Claims
  */
 export function saveClaimsToStorage(claims: any[]) {
   try {
@@ -95,7 +182,7 @@ export function saveClaimsToStorage(claims: any[]) {
 }
 
 /**
- * 7. Load Claims
+ * 10. Load Claims
  */
 export function loadClaimsFromStorage(defaultClaims: any[]) {
   try {

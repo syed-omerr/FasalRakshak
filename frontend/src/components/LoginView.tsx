@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import { saveSessionToStorage } from "../lib/supabase";
+import { 
+  saveSessionToStorage, 
+  saveFarmerToRegistry, 
+  verifyFarmerLogin 
+} from "../lib/supabase";
 import { 
   User, 
   Building2, 
@@ -53,19 +57,56 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     setTimeout(() => {
       setLoading(false);
       if (activeRole === "kisan") {
-        const cleanPhone = mobileNumber.trim().replace(/[^\d+]/g, "") || "9848022339";
-        const resolvedName = farmerName.trim() || `Farmer (${cleanPhone})`;
+        const cleanName = farmerName.trim();
+        const cleanPhone = mobileNumber.trim().replace(/[^\d+]/g, "");
 
-        const sessionObj = {
-          role: "kisan" as const,
-          name: resolvedName,
-          phone: cleanPhone,
-          village: villageName || "Warangal West",
-          crop: cropType || "Cotton"
-        };
+        if (!cleanName || !cleanPhone) {
+          setErrorMessage("Please enter both your Full Name and Mobile Phone Number.");
+          return;
+        }
 
-        saveSessionToStorage(sessionObj);
-        onLoginSuccess(sessionObj);
+        if (isSignUp) {
+          // Save new farmer account to registry
+          const newFarmer = {
+            name: cleanName,
+            phone: cleanPhone,
+            village: villageName.trim() || "Warangal Block",
+            crop: cropType || "Cotton",
+            registered_at: new Date().toISOString()
+          };
+
+          saveFarmerToRegistry(newFarmer);
+
+          const sessionObj = {
+            role: "kisan" as const,
+            name: newFarmer.name,
+            phone: newFarmer.phone,
+            village: newFarmer.village,
+            crop: newFarmer.crop
+          };
+
+          saveSessionToStorage(sessionObj);
+          onLoginSuccess(sessionObj);
+        } else {
+          // Verify existing account in database
+          const matchedFarmer = verifyFarmerLogin(cleanName, cleanPhone);
+
+          if (!matchedFarmer) {
+            setErrorMessage(`❌ No registered account found matching '${cleanName}' and phone '${cleanPhone}'. Click 'Sign Up' below to register your account first.`);
+            return;
+          }
+
+          const sessionObj = {
+            role: "kisan" as const,
+            name: matchedFarmer.name,
+            phone: matchedFarmer.phone,
+            village: matchedFarmer.village,
+            crop: matchedFarmer.crop
+          };
+
+          saveSessionToStorage(sessionObj);
+          onLoginSuccess(sessionObj);
+        }
       } else {
         const enteredPassword = password.trim();
         if (enteredPassword && enteredPassword !== "admin123") {
@@ -203,19 +244,20 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
             {activeRole === "kisan" ? (
               /* Farmer Inputs */
               <>
-                {isSignUp && (
-                  <div>
-                    <label className="block text-muted-foreground font-bold mb-1.5">Farmer Full Name (రైతు పేరు)</label>
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1.5">Farmer Full Name (రైతు పేరు)</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <input
                       type="text"
                       placeholder="e.g. Ramesh Reddy"
                       value={farmerName}
                       onChange={(e) => setFarmerName(e.target.value)}
-                      className="w-full bg-soil border border-border rounded-lg px-3.5 py-2.5 text-foreground focus:outline-none focus:border-emerald-500/50 text-xs"
-                      required={isSignUp}
+                      className="w-full bg-soil border border-border rounded-lg pl-10 pr-3.5 py-2.5 text-foreground focus:outline-none focus:border-emerald-500/50 text-xs"
+                      required
                     />
                   </div>
-                )}
+                </div>
 
                 <div>
                   <label className="block text-muted-foreground font-bold mb-1.5">Mobile Number (మొబైల్ సంఖ్య)</label>
