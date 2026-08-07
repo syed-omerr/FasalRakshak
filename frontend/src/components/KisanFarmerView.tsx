@@ -228,6 +228,8 @@ export function KisanFarmerView({
   onAddClaim,
   filedClaims
 }: KisanFarmerViewProps) {
+  const activePlot = selectedPlot || plots[0] || INITIAL_PLOTS[0];
+
   // Onboarding state
   const [farmerName, setFarmerName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
