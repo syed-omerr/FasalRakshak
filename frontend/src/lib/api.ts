@@ -5,7 +5,8 @@
  */
 
 // Production API Base URL fallback
-const BASE_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
+const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+const BASE_URL = (import.meta as any).env?.VITE_API_URL || (isLocal ? "http://localhost:8000" : "");
 const GOOGLE_AI_KEY = (import.meta as any).env?.VITE_GOOGLE_AI_KEY || "";
 
 export interface SwiTelemetry {

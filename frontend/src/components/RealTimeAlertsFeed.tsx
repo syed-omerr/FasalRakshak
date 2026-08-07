@@ -134,11 +134,18 @@ export function RealTimeAlertsFeed({
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("http://localhost:8000/api/pmfby/alerts-feed");
-      if (!res.ok) throw new Error("Failed to fetch alerts feed");
-      const data = await res.json();
-      setAlerts(data);
-      setIsDemoMode(false);
+      const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+      if (isLocal) {
+        const res = await fetch("http://localhost:8000/api/pmfby/alerts-feed");
+        if (res.ok) {
+          const data = await res.json();
+          setAlerts(data);
+          setIsDemoMode(false);
+          return;
+        }
+      }
+      setAlerts(getFallbackAlerts());
+      setIsDemoMode(true);
     } catch (err: any) {
       setAlerts(getFallbackAlerts());
       setIsDemoMode(true);
