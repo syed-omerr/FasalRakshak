@@ -286,14 +286,53 @@ export function KisanFarmerView({
     }
   }, [dialogue, showVoiceModal]);
 
-  // Speech helper
+  // Speech helper with dual-engine Telugu/Hindi/English audio stream fallback
   const speakText = (text: string, langCode: "TE" | "HI" | "EN") => {
+    if (!text) return;
+
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
+    }
+
+    const ttsLang = langCode === "TE" ? "te" : langCode === "HI" ? "hi" : "en";
+    const voiceLangCode = langCode === "TE" ? "te-IN" : langCode === "HI" ? "hi-IN" : "en-IN";
+
+    // Check if browser has a native voice installed for this language
+    let nativeVoiceAvailable = false;
+    if ("speechSynthesis" in window) {
+      const voices = window.speechSynthesis.getVoices();
+      nativeVoiceAvailable = voices.some((v) => v.lang.toLowerCase().includes(ttsLang));
+    }
+
+    if (nativeVoiceAvailable) {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = langCode === "TE" ? "te-IN" : langCode === "HI" ? "hi-IN" : "en-IN";
+      utterance.lang = voiceLangCode;
       utterance.rate = 0.85;
       window.speechSynthesis.speak(utterance);
+      return;
+    }
+
+    // Dual-Engine Fallback: Play high-clarity online audio stream for Telugu/Hindi
+    try {
+      const encodedText = encodeURIComponent(text);
+      const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${ttsLang}&client=tw-ob`;
+      
+      const audio = new Audio(googleTtsUrl);
+      audio.play().catch(() => {
+        if ("speechSynthesis" in window) {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = voiceLangCode;
+          utterance.rate = 0.85;
+          window.speechSynthesis.speak(utterance);
+        }
+      });
+    } catch (e) {
+      if ("speechSynthesis" in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = voiceLangCode;
+        utterance.rate = 0.85;
+        window.speechSynthesis.speak(utterance);
+      }
     }
   };
 
