@@ -41,7 +41,13 @@ interface MapComponentProps {
 function RecenterMap({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo(center, 13, { duration: 1.2 });
+    try {
+      if (map && center) {
+        map.flyTo(center, 13, { duration: 1.2 });
+      }
+    } catch (e) {
+      // Ignore map transition errors during unmount
+    }
   }, [center, map]);
   return null;
 }
@@ -298,20 +304,11 @@ export function InteractiveMap({
 
       {/* Leaflet Map Renderer */}
       <div 
-        ref={(el) => {
-          if (el) {
-            delete (el as any)._leaflet_id;
-            el.querySelectorAll("*").forEach((node) => {
-              delete (node as any)._leaflet_id;
-            });
-          }
-        }}
-        key={`${selectedPlot.id}-${mapKey}`}
         id="leaflet-map-container" 
         className={`flex-1 w-full h-full ${clickToAddMode ? "cursor-crosshair" : ""}`}
       >
         <MapContainer
-          key={`${selectedPlot.id}-${mapKey}`}
+          key="fasalrakshak-static-leaflet-map"
           center={selectedPlot.center}
           zoom={13}
           scrollWheelZoom={false}
