@@ -34,6 +34,7 @@ import {
   Trash2,
   ShieldAlert,
   FileText,
+  Search,
 } from "lucide-react";
 
 import { 
@@ -251,15 +252,20 @@ function Index() {
   useEffect(() => {
     async function loadWeather() {
       try {
-        const res = await fetch(
-          `http://localhost:8000/api/weather?lat=${selectedPlot.center[0]}&lon=${selectedPlot.center[1]}`
-        );
-        if (res.ok) {
-          const json = await res.json();
-          setWeatherList(json.daily_forecasts || []);
-        } else {
-          setWeatherList(getFallbackWeather());
+        const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+        const baseUrl = isLocal ? "http://localhost:8000" : "";
+        
+        if (baseUrl) {
+          const res = await fetch(
+            `${baseUrl}/api/weather?lat=${selectedPlot.center[0]}&lon=${selectedPlot.center[1]}`
+          );
+          if (res.ok) {
+            const json = await res.json();
+            setWeatherList(json.daily_forecasts || getFallbackWeather());
+            return;
+          }
         }
+        setWeatherList(getFallbackWeather());
       } catch (err) {
         setWeatherList(getFallbackWeather());
       }
