@@ -162,6 +162,7 @@ interface WeatherData {
 
 function Index() {
   const y = useScrollY();
+  const [isMounted, setIsMounted] = useState(false);
   const [authSession, setAuthSession] = useState<{
     role: "kisan" | "enterprise";
     name: string;
@@ -170,16 +171,30 @@ function Index() {
     email?: string;
     district?: string;
     crop?: string;
-  } | null>(() => loadSessionFromStorage());
+  } | null>(null);
 
   const [productView, setProductView] = useState<"kisan" | "enterprise">("enterprise");
-  const [plotList, setPlotList] = useState<FarmPlot[]>(() => loadPlotsFromStorage(INITIAL_PLOTS));
-  const [selectedPlot, setSelectedPlot] = useState<FarmPlot>(() => loadPlotsFromStorage(INITIAL_PLOTS)[0] || INITIAL_PLOTS[0]);
+  const [plotList, setPlotList] = useState<FarmPlot[]>(INITIAL_PLOTS);
+  const [selectedPlot, setSelectedPlot] = useState<FarmPlot>(INITIAL_PLOTS[0]);
   const [showNdviOverlay, setShowNdviOverlay] = useState<boolean>(true);
   const [weatherList, setWeatherList] = useState<WeatherData[]>([]);
   const [language, setLanguage] = useState<"EN" | "HI" | "TE">("EN");
   const [activeTab, setActiveTab] = useState<"satellite" | "pmfby" | "mandi" | "onboarding">("onboarding");
   const [InteractiveMap, setInteractiveMap] = useState<any>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const session = loadSessionFromStorage();
+    if (session) {
+      setAuthSession(session);
+      setProductView(session.role);
+    }
+    const storedPlots = loadPlotsFromStorage(INITIAL_PLOTS);
+    if (storedPlots && storedPlots.length > 0) {
+      setPlotList(storedPlots);
+      setSelectedPlot(storedPlots[0]);
+    }
+  }, []);
 
   // Shared alerts feed log state
   const [dispatchedAlerts, setDispatchedAlerts] = useState<AlertLogItem[]>([
@@ -767,11 +782,6 @@ function StatsBand() {
 function DashboardSection({
   plots,
   selectedPlot,
-  setSelectedPlot,
-  showNdviOverlay,
-  setShowNdviOverlay,
-  weatherList,
-  onAddNewPlot,
   onRemovePlot,
   InteractiveMap,
 }: {
@@ -785,6 +795,17 @@ function DashboardSection({
   onRemovePlot: (plotId: string) => void;
   InteractiveMap: any;
 }) {
+  const [plotSearch, setPlotSearch] = useState("");
+  const safePlot = selectedPlot || plots[0] || INITIAL_PLOTS[0];
+
+  const filteredPlots = plots.filter(
+    (p) =>
+      p.name.toLowerCase().includes(plotSearch.toLowerCase()) ||
+      p.farmer.toLowerCase().includes(plotSearch.toLowerCase()) ||
+      p.crop_type.toLowerCase().includes(plotSearch.toLowerCase()) ||
+      p.location.toLowerCase().includes(plotSearch.toLowerCase())
+  );
+
   return (
     <section id="map" className="py-28 md:py-36 bg-soil/40 border-b border-border">
       <div className="mx-auto max-w-[1600px] px-6 md:px-10 space-y-10">
@@ -796,53 +817,71 @@ function DashboardSection({
                 Interactive Satellite &amp; Telemetry Map
               </h2>
               <p className="text-sm text-muted-foreground mt-2">
-                Select from regional presets, search any district in India, or click directly on the map to add/remove custom fields.
+                Select from regional presets, search any farmer or district, or click directly on the map to add/remove custom fields.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 max-w-2xl">
-              {plots.map((plot) => {
-                const active = plot.id === selectedPlot.id;
-                return (
-                  <div
-                    key={plot.id}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
-                      active
-                        ? "border-primary bg-primary text-primary-foreground shadow-md"
-                        : "border-border bg-card text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <button
-                      onClick={() => setSelectedPlot(plot)}
-                      className="flex items-center gap-2"
-                    >
-                      <span
-                        className={`size-2 rounded-full ${
-                          plot.health_status === "HEALTHY"
-                            ? "bg-emerald-400"
-                            : plot.health_status === "MODERATE"
-                            ? "bg-amber-400"
-                            : "bg-rose-400"
-                        }`}
-                      />
-                      <span>{plot.name}</span>
-                    </button>
+            <div className="flex flex-col gap-3 max-w-2xl w-full md:w-auto">
+              {/* Search Bar for Satellite Map Plot Menu */}
+              <div className="relative w-full">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="🔍 Search farmer name, plot, crop (e.g. Laxmi, Cotton)..."
+                  value={plotSearch}
+                  onChange={(e) => setPlotSearch(e.target.value)}
+                  className="w-full bg-card border border-border rounded-xl pl-10 pr-4 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-sm"
+                />
+              </div>
 
-                    {plots.length > 1 && (
-                      <button
-                        title="Remove plot from monitoring"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemovePlot(plot.id);
-                        }}
-                        className="ml-1 text-muted-foreground hover:text-rose-400 p-0.5 rounded-full transition-colors"
+              <div className="flex flex-wrap items-center gap-2">
+                {filteredPlots.length === 0 ? (
+                  <span className="text-xs text-muted-foreground italic">No plots match "{plotSearch}"</span>
+                ) : (
+                  filteredPlots.map((plot) => {
+                    const active = safePlot && plot.id === safePlot.id;
+                    return (
+                      <div
+                        key={plot.id}
+                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
+                          active
+                            ? "border-primary bg-primary text-primary-foreground shadow-md"
+                            : "border-border bg-card text-muted-foreground hover:text-foreground"
+                        }`}
                       >
-                        <X className="size-3" />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                        <button
+                          onClick={() => setSelectedPlot(plot)}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          <span
+                            className={`size-2 rounded-full ${
+                              plot.health_status === "HEALTHY"
+                                ? "bg-emerald-400"
+                                : plot.health_status === "MODERATE"
+                                ? "bg-amber-400"
+                                : "bg-rose-400"
+                            }`}
+                          />
+                          <span>{plot.name}</span>
+                        </button>
+
+                        {plots.length > 1 && (
+                          <button
+                            title="Remove plot from monitoring"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemovePlot(plot.id);
+                            }}
+                            className="ml-1 text-muted-foreground hover:text-rose-400 p-0.5 rounded-full transition-colors cursor-pointer"
+                          >
+                            <X className="size-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </Reveal>
@@ -853,7 +892,7 @@ function DashboardSection({
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <div className="flex items-center gap-2 text-primary font-bold text-sm">
                 <CloudSun className="size-5" />
-                <span>Open-Meteo 7-Day Live Weather Forecast • {selectedPlot.location}</span>
+                <span>Open-Meteo 7-Day Live Weather Forecast • {safePlot.location}</span>
               </div>
               <span className="text-xs text-muted-foreground">API Sync: Online</span>
             </div>
@@ -884,7 +923,7 @@ function DashboardSection({
             {InteractiveMap ? (
               <InteractiveMap
                 plots={plots}
-                selectedPlot={selectedPlot}
+                selectedPlot={safePlot}
                 onSelectPlot={(p) => setSelectedPlot(p)}
                 showNdviOverlay={showNdviOverlay}
                 onToggleNdviOverlay={() => setShowNdviOverlay(!showNdviOverlay)}
@@ -1053,6 +1092,8 @@ function TraitsSection() {
 }
 
 function YieldSection({ y, selectedPlot }: { y: number; selectedPlot: FarmPlot }) {
+  const safePlot = selectedPlot || INITIAL_PLOTS[0];
+
   return (
     <section id="weather" className="relative overflow-hidden bg-soil py-28 md:py-40">
       <div className="mx-auto grid max-w-[1600px] items-center gap-16 px-6 md:grid-cols-[0.9fr_1.1fr] md:px-10">
@@ -1079,7 +1120,7 @@ function YieldSection({ y, selectedPlot }: { y: number; selectedPlot: FarmPlot }
 
           <div className="rounded-xl border border-border bg-card p-5 space-y-4">
             <div className="flex justify-between items-center border-b border-border pb-3">
-              <span className="font-bold text-base text-foreground">Disease Risk Status • {selectedPlot.crop_type}</span>
+              <span className="font-bold text-base text-foreground">Disease Risk Status • {safePlot.crop_type}</span>
               <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
                 Powdery Mildew Risk: MEDIUM
               </span>
@@ -1091,7 +1132,7 @@ function YieldSection({ y, selectedPlot }: { y: number; selectedPlot: FarmPlot }
 
           <ul className="space-y-4 border-t border-border pt-6">
             {[
-              ["Target Crop", selectedPlot.crop_type],
+              ["Target Crop", safePlot.crop_type],
               ["Estimated Harvest Window", "110–120 Days"],
               ["Predicted Yield Accuracy", "±5% Variance"],
             ].map(([k, v]) => (
